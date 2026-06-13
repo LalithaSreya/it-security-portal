@@ -6,11 +6,14 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 // Clean URL in case it has trailing slashes or /rest/v1 appended from the Data API tab
 let supabaseUrl = rawSupabaseUrl.trim();
+if (supabaseUrl.endsWith('/')) {
+  supabaseUrl = supabaseUrl.slice(0, -1);
+}
 if (supabaseUrl.endsWith('/rest/v1')) {
-  supabaseUrl = supabaseUrl.substring(0, supabaseUrl.length - 8);
+  supabaseUrl = supabaseUrl.slice(0, -8);
 }
 if (supabaseUrl.endsWith('/')) {
-  supabaseUrl = supabaseUrl.substring(0, supabaseUrl.length - 1);
+  supabaseUrl = supabaseUrl.slice(0, -1);
 }
 
 const isRealSupabase = Boolean(supabaseUrl && supabaseAnonKey);
