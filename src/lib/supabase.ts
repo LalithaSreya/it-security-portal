@@ -1,8 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Env variables for real Supabase
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const rawSupabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+// Clean URL in case it has trailing slashes or /rest/v1 appended from the Data API tab
+let supabaseUrl = rawSupabaseUrl.trim();
+if (supabaseUrl.endsWith('/rest/v1')) {
+  supabaseUrl = supabaseUrl.substring(0, supabaseUrl.length - 8);
+}
+if (supabaseUrl.endsWith('/')) {
+  supabaseUrl = supabaseUrl.substring(0, supabaseUrl.length - 1);
+}
 
 const isRealSupabase = Boolean(supabaseUrl && supabaseAnonKey);
 
