@@ -44,7 +44,6 @@ export default function Login() {
   const {
     register: registerLogin,
     handleSubmit: handleLoginSubmit,
-    setValue: setLoginValue,
     formState: { errors: loginErrors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -124,12 +123,6 @@ export default function Login() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const autofill = (email: string) => {
-    setLoginValue('email', email);
-    setLoginValue('password', 'password123');
-    setErrorMsg(null);
   };
 
   return (
@@ -353,57 +346,6 @@ export default function Login() {
             </form>
           )}
 
-          {/* Quick Demo Credentials (only visible when not registering) */}
-          {!isRegistering && (
-            <div className="mt-8 border-t pt-6 border-border/50">
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center mb-4">
-                Demo Access Credentials (Local Mock)
-              </h4>
-              <div className="grid grid-cols-1 gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => autofill('admin@itsec.com')}
-                  className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-4 py-2 text-xs font-medium hover:bg-muted/70 transition-colors text-left"
-                >
-                  <div>
-                    <span className="font-bold text-foreground">Admin: </span>
-                    <span className="text-muted-foreground">admin@itsec.com</span>
-                  </div>
-                  <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                    Full Access
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => autofill('manager@itsec.com')}
-                  className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-4 py-2 text-xs font-medium hover:bg-muted/70 transition-colors text-left"
-                >
-                  <div>
-                    <span className="font-bold text-foreground">Manager: </span>
-                    <span className="text-muted-foreground">manager@itsec.com</span>
-                  </div>
-                  <span className="rounded bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-500">
-                    Operations
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => autofill('tech@itsec.com')}
-                  className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-4 py-2 text-xs font-medium hover:bg-muted/70 transition-colors text-left"
-                >
-                  <div>
-                    <span className="font-bold text-foreground">Technician: </span>
-                    <span className="text-muted-foreground">tech@itsec.com</span>
-                  </div>
-                  <span className="rounded bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
-                    Restricted
-                  </span>
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
