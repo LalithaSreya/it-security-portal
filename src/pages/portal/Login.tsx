@@ -73,7 +73,7 @@ export default function Login() {
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
-      const { error } = await login(data.email);
+      const { error } = await login(data.email, data.password);
       if (error) {
         setErrorMsg(error.message || 'Login failed. Please check your credentials.');
       } else {

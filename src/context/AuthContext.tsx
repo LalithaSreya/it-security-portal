@@ -5,7 +5,7 @@ interface AuthContextType {
   user: any | null;
   employee: Employee | null;
   loading: boolean;
-  login: (email: string) => Promise<{ error: any }>;
+  login: (email: string, password?: string) => Promise<{ error: any }>;
   logout: () => Promise<{ error: any }>;
 }
 
@@ -79,12 +79,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = async (email: string) => {
-    // In our mock/unified system, password check is simplified for local testing
-    // We pass a dummy password since password validation is optional in our mock
+  const login = async (email: string, password = 'password123') => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
-      password: 'password123',
+      password,
     });
 
     if (error) {
