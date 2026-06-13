@@ -73,11 +73,9 @@ create policy "Allow authenticated users to read employees" on public.employees
 
 create policy "Allow Admins full write to employees" on public.employees
   for all using (
-    exists (
-      select 1 from public.employees
-      where id = auth.uid() and role = 'Admin'
-    )
+    (auth.jwt() -> 'user_metadata' ->> 'role') = 'Admin'
   );
+
 
 -- 4. NEW AUTH USER TRIGGER PROFILE SYNC
 create or replace function public.handle_new_user()

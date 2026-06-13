@@ -78,11 +78,9 @@ create policy "Allow authenticated users to read employees" on public.employees
 -- Policies: Only Admins can modify employee rows
 create policy "Allow Admins full write to employees" on public.employees
   for all using (
-    exists (
-      select 1 from public.employees
-      where id = auth.uid() and role = 'Admin'
-    )
+    (auth.jwt() -> 'user_metadata' ->> 'role') = 'Admin'
   );
+
 
 -- 4. AUTOMATIC SIGNUP-TO-PROFILE SYNC TRIGGER
 -- Automatically creates an employee profile record when a new auth user is created.
