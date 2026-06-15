@@ -154,12 +154,10 @@ export default function Employees() {
             body: JSON.stringify({
               email: empEmail.trim(),
               password: empPassword,
-              options: {
-                data: {
-                  employee_name: empName.trim(),
-                  role: empRole,
-                  phone: empPhone.trim()
-                }
+              data: {
+                employee_name: empName.trim(),
+                role: empRole,
+                phone: empPhone.trim()
               }
             })
           });
