@@ -49,7 +49,7 @@ export default function PortalLayout() {
       name: 'Employees',
       path: '/portal/employees',
       icon: UserCheck,
-      roles: ['Admin', 'Manager'], // Hidden for Technician
+      roles: ['Manager'], // Hidden for Technician
     },
   ];
 

@@ -21,7 +21,7 @@ const registerSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
   phone: z.string().min(10, { message: 'Phone number must be at least 10 digits.' }),
-  role: z.enum(['Admin', 'Manager', 'Technician']),
+  role: z.enum(['Manager', 'Technician']),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -290,7 +290,6 @@ export default function Login() {
                       <SelectValue placeholder="Select Role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Admin">Admin</SelectItem>
                       <SelectItem value="Manager">Manager</SelectItem>
                       <SelectItem value="Technician">Technician</SelectItem>
                     </SelectContent>

@@ -3,7 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: ('Admin' | 'Manager' | 'Technician')[];
+  allowedRoles?: ('Manager' | 'Technician')[];
 }
 
 export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
@@ -27,7 +27,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
   }
 
   // Redirect to dashboard if authenticated but doesn't have the required role
-  if (allowedRoles && employee && !allowedRoles.includes(employee.role)) {
+  if (allowedRoles && employee && !allowedRoles.includes(employee.role as any)) {
     return <Navigate to="/portal/dashboard" replace />;
   }
 

@@ -39,7 +39,7 @@ import {
 
 export default function Employees() {
   const { employee: currentEmployee } = useAuth();
-  const isAdmin = currentEmployee?.role === 'Admin';
+  const isManager = currentEmployee?.role === 'Manager';
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +53,7 @@ export default function Employees() {
   const [empName, setEmpName] = useState('');
   const [empEmail, setEmpEmail] = useState('');
   const [empPhone, setEmpPhone] = useState('');
-  const [empRole, setEmpRole] = useState<'Admin' | 'Manager' | 'Technician'>('Technician');
+  const [empRole, setEmpRole] = useState<'Manager' | 'Technician'>('Technician');
   const [empStatus, setEmpStatus] = useState<'Active' | 'Inactive'>('Active');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -98,14 +98,14 @@ export default function Employees() {
     setEmpName(emp.employee_name);
     setEmpEmail(emp.email);
     setEmpPhone(emp.phone || '');
-    setEmpRole(emp.role);
+    setEmpRole(emp.role === 'Admin' ? 'Manager' : emp.role);
     setEmpStatus(emp.status);
     setIsOpen(true);
   };
 
   const handleSaveEmployee = async () => {
-    if (!isAdmin) {
-      alert('Unauthorized! Only Admins can modify employee records.');
+    if (!isManager) {
+      alert('Unauthorized! Only Managers can modify employee records.');
       return;
     }
     
@@ -155,8 +155,8 @@ export default function Employees() {
 
   const handleDeleteEmployee = async () => {
     if (!empToDelete) return;
-    if (!isAdmin) {
-      alert('Unauthorized! Only Admins can delete employee records.');
+    if (!isManager) {
+      alert('Unauthorized! Only Managers can delete employee records.');
       return;
     }
 
@@ -216,9 +216,9 @@ export default function Employees() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Employees Directory</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {isAdmin 
+            {isManager 
               ? 'Add, update, or remove internal employee access and credentials.' 
-              : 'Browse employee list directory. Modify capabilities restricted to Admin users.'}
+              : 'Browse employee list directory. Modify capabilities restricted to Manager users.'}
           </p>
         </div>
         <div className="flex gap-2.5">
@@ -226,7 +226,7 @@ export default function Employees() {
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
-          {isAdmin && (
+          {isManager && (
             <Button size="sm" onClick={openAddDialog}>
               <Plus className="mr-2 h-4 w-4" />
               Add Employee
@@ -235,13 +235,13 @@ export default function Employees() {
         </div>
       </div>
 
-      {/* RLS Warnings for Manager */}
-      {!isAdmin && (
+      {/* RLS Warnings for Technician */}
+      {!isManager && (
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 flex gap-3 text-sm text-amber-800 dark:text-amber-500">
           <ShieldAlert className="h-5 w-5 shrink-0" />
           <div>
-            <span className="font-bold">Manager Mode: </span>
-            You have read-only access to this directory. Creating, editing, or deleting employees requires Admin role permissions.
+            <span className="font-bold">Technician Mode: </span>
+            You have read-only access to this directory. Creating, editing, or deleting employees requires Manager role permissions.
           </div>
         </div>
       )}
@@ -296,7 +296,7 @@ export default function Employees() {
                     </span>
                   </TableCell>
                   <TableCell className="px-6 py-4 text-right">
-                    {isAdmin ? (
+                    {isManager ? (
                       <div className="flex justify-end items-center gap-1">
                         <Button
                           variant="ghost"
@@ -396,7 +396,6 @@ export default function Employees() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Admin">Admin</SelectItem>
                     <SelectItem value="Manager">Manager</SelectItem>
                     <SelectItem value="Technician">Technician</SelectItem>
                   </SelectContent>
