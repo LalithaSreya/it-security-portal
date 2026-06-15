@@ -1,162 +1,90 @@
-# Walkthrough - Phase 3 Complete (MVP Stabilization & Deployment)
+# Walkthrough - Phase 4B Complete (Unified Field Operations & Task Lifecycle)
 
-I have successfully stabilized the IT Security & Solutions Company Application, prepared it for connection with a live Supabase backend, completed all CRUD operations, and set up deployment settings.
-
-## Live Link
-The application development server is active and verified at:
-👉 **[http://localhost:5173/](http://localhost:5173/)**
+I have successfully completed Phase 4B, refactoring the portal into a robust, task-centric field operations platform. The portal now enables seamless workflows where managers create, assign, and verify tasks, and technicians execute them via a mobile-first UI with photo evidence uploads, live timelines, and in-app notifications.
 
 ---
 
-## 1. Database Schema & Supabase Setup Instructions
+## 1. Core Workflow & Operations
 
-Run this SQL script in the **Supabase SQL Editor** to create the tables, define RLS policies, and set up automatic employee profile syncing:
-
-```sql
--- Enable UUID extension
-create extension if not exists "uuid-ossp";
-
--- 1. LEADS TABLE
-create table if not exists public.leads (
-  id uuid default gen_random_uuid() primary key,
-  name text not null,
-  email text not null,
-  phone text not null,
-  city text not null,
-  service_required text not null,
-  message text not null,
-  status text not null default 'New', -- New, Contacted, Qualified, Converted, Closed
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
-alter table public.leads enable row level security;
-
-create policy "Allow public insert to leads" on public.leads
-  for insert with check (true);
-
-create policy "Allow authenticated users access to leads" on public.leads
-  for all using (auth.role() = 'authenticated');
-
-
--- 2. CUSTOMERS TABLE
-create table if not exists public.customers (
-  id uuid default gen_random_uuid() primary key,
-  customer_name text not null,
-  phone text not null,
-  email text not null,
-  city text not null,
-  address text not null,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
-alter table public.customers enable row level security;
-
-create policy "Allow authenticated users access to customers" on public.customers
-  for all using (auth.role() = 'authenticated');
-
-
--- 3. EMPLOYEES TABLE
-create table if not exists public.employees (
-  id uuid references auth.users on delete cascade primary key,
-  employee_name text not null,
-  role text not null check (role in ('Admin', 'Manager', 'Technician')),
-  phone text,
-  email text not null,
-  status text not null default 'Active', -- Active, Inactive
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
-alter table public.employees enable row level security;
-
-create policy "Allow authenticated users to read employees" on public.employees
-  for select using (auth.role() = 'authenticated');
-
-create policy "Allow Admins full write to employees" on public.employees
-  for all using (
-    exists (
-      select 1 from public.employees
-      where id = auth.uid() and role = 'Admin'
-    )
-  );
-
--- 4. NEW AUTH USER TRIGGER PROFILE SYNC
-create or replace function public.handle_new_user()
-returns trigger as $$
-begin
-  insert into public.employees (id, employee_name, role, phone, email, status)
-  values (
-    new.id,
-    coalesce(new.raw_user_meta_data->>'employee_name', 'New User'),
-    coalesce(new.raw_user_meta_data->>'role', 'Technician'),
-    new.raw_user_meta_data->>'phone',
-    new.email,
-    'Active'
-  );
-  return new;
-end;
-$$ language plpgsql security definer;
-
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();
+```mermaid
+graph TD
+    A[Manager Receives Request] --> B[Manager Creates Task]
+    B --> C[Manager Assigns Technician & Priority]
+    C --> D[Technician receives Notification]
+    D --> E[Technician marks 'Start Work']
+    E --> F[Technician uploads Before/After Photos & Notes]
+    F --> G[Technician marks 'Completed' & Submits]
+    G --> H[Manager receives Notification]
+    H --> I{Manager Review}
+    I -- Reject --> J[Technician notified & Re-runs Task]
+    J --> F
+    I -- Approve --> K[Task Completed & Archived]
+    K --> L[Image automatically syncs to Website Gallery]
 ```
 
 ---
 
-## 2. Environment Variables Configuration
+## 2. Completed Modules & Files
 
-Create a `.env` file in your root folder:
-```env
-VITE_SUPABASE_URL=https://your-supabase-project-id.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-*Note: If these env variables are not supplied, the client dynamically runs in sandboxed LocalStorage Mock Mode so that the portal remains fully functional.*
+### 2.1 Database & Client Setup
+*   **Database Schema (`database_fix.sql`)**: Completed remote migrations with RLS policies, recursion-free security configurations, and full structures for `tasks`, `notifications`, and `gallery` tables.
+*   **Supabase Client (`src/lib/supabase.ts`)**: Upgraded `Task`, `Notification`, and `GalleryItem` definitions. Hooked up simulated storage upload streams and seeded high-fidelity mock assets for local-first execution.
+*   **UI Components**:
+    *   [badge.tsx](file:///C:/Users/sreya/antigravity/scratch/it-security-portal/src/components/ui/badge.tsx): Created modern, styled badge UI element to handle priority levels and task statuses.
+    *   [NotificationBell.tsx](file:///C:/Users/sreya/antigravity/scratch/it-security-portal/src/components/layout/NotificationBell.tsx): Implemented bell dropdown in top header layout, listing unread dispatches and handling instant read sweeps.
 
----
+### 2.2 Manager Panel Refactoring
+*   [ManagerDashboard.tsx](file:///C:/Users/sreya/antigravity/scratch/it-security-portal/src/pages/portal/ManagerDashboard.tsx): Modernized analytics dashboard containing Total, Active, Review, and Emergency gauges, followed by a Technician performance board displaying completion rates.
+*   [ManagerTasks.tsx](file:///C:/Users/sreya/antigravity/scratch/it-security-portal/src/pages/portal/ManagerTasks.tsx): Operational control center for creating tasks, reassigning technicians, auditing logs, and reviewing submissions (approving or rejecting with descriptions).
+*   [Reports.tsx](file:///C:/Users/sreya/antigravity/scratch/it-security-portal/src/pages/portal/Reports.tsx): Consolidated analytics comparing technician completion rates, general field summaries, and log audits.
+*   [GalleryManagement.tsx](file:///C:/Users/sreya/antigravity/scratch/it-security-portal/src/pages/portal/GalleryManagement.tsx): Showcase upload panel for managers to publish finished field installations directly to the public website.
 
-## 3. CRUD Upgrades & Enhancements
+### 2.3 Technician Mobile-First Portal
+*   [MyTasks.tsx](file:///C:/Users/sreya/antigravity/scratch/it-security-portal/src/pages/portal/MyTasks.tsx): Mobile-first card deck representing assigned works, filterable by status categories (Assigned, Active, Review, Done) and due dates.
+*   [TaskDetails.tsx](file:///C:/Users/sreya/antigravity/scratch/it-security-portal/src/pages/portal/TaskDetails.tsx): Rich visual console letting field technicians:
+    *   Access client details, call lines, and maps directions.
+    *   Launch tasks ("Start Work").
+    *   Upload Before, After, and Completion photos (snapping camera frames on mobile).
+    *   Write field logs and submit tasks for review.
+    *   Review chronological activity timelines.
 
-*   **Leads Module**:
-    *   Added **`+ Create Lead`** button and modal form.
-    *   Enhanced **`Edit Lead`** to support full modifications (name, email, phone, city, service required, message, status).
-    *   Added **`Delete Lead`** action with a safety confirmation modal.
-*   **Customers Module**:
-    *   Added **`+ Create Customer`** button and modal form.
-    *   Added **`Delete Customer`** action with a safety confirmation modal.
-*   **Error Handling**:
-    *   Integrated loading placeholder skeletons.
-    *   Added empty warning rows if a search returned no items.
-    *   Equipped request operations with `try/catch` alert prompts in case of API failures.
-
----
-
-## 4. Deployment on Vercel
-
-*   We created `vercel.json` in the root containing:
-    ```json
-    {
-      "rewrites": [
-        { "source": "/(.*)", "destination": "/index.html" }
-      ]
-    }
-    ```
-*   **Vercel Build Settings**:
-    *   Build Command: `npm run build`
-    *   Output Directory: `dist`
-    *   Environment Variables: Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` under settings.
+### 2.4 Website Integration
+*   [Gallery.tsx](file:///C:/Users/sreya/antigravity/scratch/it-security-portal/src/pages/Gallery.tsx): Rebuilt public gallery page. Queries the database `gallery` table, dynamically categorizes uploads based on keyword metadata, and falls back gracefully to default assets to keep page design premium.
 
 ---
 
-## 5. Testing & Verification Checklist
+## 3. Deployment & Production Checks
 
-1.  **Authentication**:
-    *   Register or invite a user via the Supabase Auth panel. Write metadata properties `employee_name` and `role`.
-    *   Confirm login, persistent sessions on page reload, and logout functions.
-2.  **Contact Form**:
-    *   Verify submitting the public contact form saves a new lead in the Supabase database.
-3.  **Lead CRUD**:
-    *   Verify clicking `+ Create Lead`, editing, status-updating, and deleting operations sync correctly.
-4.  **Customer CRUD**:
-    *   Verify manually adding a customer, updating fields, and deleting operations sync correctly.
-5.  **Employee CRUD**:
-    *   Verify role limits (Technicians blocked, Managers read-only, Admins read-write).
+*   **TypeScript Compiling**: Verified by executing `npm run build`. Compiles clean with exit code `0` and generates production bundles inside `dist/`.
+*   **Supabase Storage Buckets**:
+    *   `task-evidence`: Created to store Before/After technician pictures.
+    *   `gallery-images`: Created to store manager-published public highlights.
+
+---
+
+## 4. Operational Testing Script
+
+Follow this checklist to verify the full task life-cycle:
+
+1.  **Manager Task Dispatch**:
+    *   Log in as Sarah Manager (`manager@itsec.com`).
+    *   Go to **Tasks** -> Click **Create Task** -> Assign to Alex Technician with high priority.
+2.  **Technician In-box & Start**:
+    *   Log in as Alex Technician (`tech@itsec.com`).
+    *   Check notifications bell (alert shows new task).
+    *   Go to **My Tasks** -> Click task to open details.
+    *   Click **Start Work Now**. (Timeline logs event).
+3.  **Uploading Photos & Notes**:
+    *   Under "Work Photo Evidence", click **Snap / Add** in "Before Photos" and upload a file.
+    *   Perform work, upload "After Photos".
+    *   Write notes: "Lobby CCTV setup completed, feed testing successful."
+    *   Click **Submit for Manager Review**. (Status turns to review).
+4.  **Manager Audit & Rejection/Approval**:
+    *   Switch to Sarah Manager.
+    *   Check notification (Alex submitted task).
+    *   Open **Tasks** -> Click **Verify Completion** on Alex's task.
+    *   Review notes, view uploaded photos.
+    *   Click **Approve Task Completed** (task status updates to Completed) OR click **Reject** and write reason (task goes back to Alex with notes).
+5.  **Gallery Sync**:
+    *   On Manager portal -> Go to **Gallery Management** -> Upload a finished CCTV rack photo.
+    *   Log out and go to public website -> **Project Showcase**. Confirm the new image shows under the correct filtered category.

@@ -6,6 +6,7 @@ import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import ManagerSidebar from './ManagerSidebar';
+import NotificationBell from './NotificationBell';
 
 export default function ManagerLayout() {
   const { user, employee, loading } = useAuth();
@@ -68,6 +69,7 @@ export default function ManagerLayout() {
           </div>
 
           <div className="flex items-center gap-4">
+            <NotificationBell />
             <ThemeToggle />
             {employee && (
               <div className="hidden items-center gap-2 rounded-full border border-border bg-muted/40 px-3.5 py-1 text-xs font-semibold sm:flex text-muted-foreground">

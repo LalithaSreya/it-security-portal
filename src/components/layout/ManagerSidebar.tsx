@@ -2,16 +2,14 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Users, 
-  UserCheck, 
-  Contact2, 
   ShieldCheck, 
   LogOut, 
   ChevronRight,
   User,
   Globe,
-  ClipboardList,
   CheckSquare,
-  BarChart3
+  BarChart3,
+  Image
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -36,34 +34,24 @@ export default function ManagerSidebar({ onCloseMobile }: ManagerSidebarProps) {
       icon: LayoutDashboard,
     },
     {
-      name: 'Leads',
-      path: '/portal/manager/leads',
-      icon: Contact2,
-    },
-    {
-      name: 'Customers',
-      path: '/portal/manager/customers',
-      icon: Users,
-    },
-    {
-      name: 'Employees',
-      path: '/portal/manager/employees',
-      icon: UserCheck,
-    },
-    {
-      name: 'Surveys',
-      path: '/portal/manager/surveys',
-      icon: ClipboardList,
-    },
-    {
-      name: 'Task Assignment',
+      name: 'Tasks',
       path: '/portal/manager/tasks',
       icon: CheckSquare,
+    },
+    {
+      name: 'Technicians',
+      path: '/portal/manager/employees',
+      icon: Users,
     },
     {
       name: 'Reports',
       path: '/portal/manager/reports',
       icon: BarChart3,
+    },
+    {
+      name: 'Gallery Management',
+      path: '/portal/manager/gallery',
+      icon: Image,
     },
     {
       name: 'Company Info',

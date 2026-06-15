@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { supabase, type Survey, type Task } from '@/lib/supabase';
+import { supabase, type Task } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
-  ClipboardList, 
   Clock, 
   CheckCircle2, 
   CheckSquare, 
   Wrench,
   ArrowRight,
-  Loader2
+  Loader2,
+  FileClock
 } from 'lucide-react';
 
 export default function TechnicianDashboard() {
@@ -19,10 +19,10 @@ export default function TechnicianDashboard() {
   const navigate = useNavigate();
 
   const [stats, setStats] = useState({
-    assignedSurveys: 0,
-    inProgressSurveys: 0,
-    completedSurveys: 0,
-    pendingTasks: 0,
+    assignedTasks: 0,
+    inProgressTasks: 0,
+    completedTasks: 0,
+    todaysTasks: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -31,29 +31,30 @@ export default function TechnicianDashboard() {
       if (!employee?.id) return;
       setIsLoading(true);
       try {
-        const [surveysRes, tasksRes] = await Promise.all([
-          supabase.from('surveys').select('*').eq('assigned_technician', employee.id),
-          supabase.from('tasks').select('*').eq('assigned_technician', employee.id),
-        ]);
+        const { data, error } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('assigned_technician', employee.id);
 
-        const surveys: Survey[] = surveysRes.data || [];
-        const tasks: Task[] = tasksRes.data || [];
+        if (error) throw error;
 
-        const assignedSurveys = surveys.filter(s => s.status === 'Assigned').length;
-        const inProgressSurveys = surveys.filter(s => s.status === 'In Progress').length;
+        const tasks: Task[] = data || [];
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        const assignedTasks = tasks.filter(t => t.status === 'Assigned').length;
+        const inProgressTasks = tasks.filter(t => t.status === 'In Progress').length;
+        const completedTasks = tasks.filter(t => t.status === 'Completed').length;
         
-        // Completed/Approved count
-        const completedSurveys = surveys.filter(
-          s => s.status === 'Completed' || s.status === 'Approved'
+        // Today's tasks are pending/in progress tasks due today
+        const todaysTasks = tasks.filter(
+          t => t.due_date === todayStr && t.status !== 'Completed'
         ).length;
 
-        const pendingTasks = tasks.filter(t => t.status === 'Pending').length;
-
         setStats({
-          assignedSurveys,
-          inProgressSurveys,
-          completedSurveys,
-          pendingTasks,
+          assignedTasks,
+          inProgressTasks,
+          completedTasks,
+          todaysTasks,
         });
       } catch (err) {
         console.error('Error fetching technician dashboard metrics:', err);
@@ -85,39 +86,39 @@ export default function TechnicianDashboard() {
           Hello, {employee?.employee_name || 'Technician'}
         </h1>
         <p className="text-xs text-muted-foreground">
-          Here is your operational overview for today. Tap any card to open.
+          Here is your task overview for today. Tap any card to open your tasks list.
         </p>
       </div>
 
       {/* Grid of Large Cards */}
       <div className="grid grid-cols-1 gap-4">
-        {/* Assigned Surveys */}
+        {/* Assigned Tasks */}
         <Card 
-          className="relative overflow-hidden cursor-pointer hover:border-primary/50 transition-all shadow-md group py-2"
-          onClick={() => navigate('/portal/technician/surveys?tab=Assigned')}
+          className="relative overflow-hidden cursor-pointer hover:border-primary/50 transition-all shadow-md group py-1"
+          onClick={() => navigate('/portal/technician/tasks?status=Assigned')}
         >
           <CardContent className="p-5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 text-blue-500 flex items-center justify-center shrink-0">
-                <ClipboardList className="h-6 w-6" />
+                <CheckSquare className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-foreground">Assigned Surveys</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">New client sites to visit</p>
+                <h3 className="text-base font-bold text-foreground">Assigned Tasks</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">New jobs waiting to start</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-black text-blue-500 tracking-tight">{stats.assignedSurveys}</span>
+              <span className="text-2xl font-black text-blue-500 tracking-tight">{stats.assignedTasks}</span>
               <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
             </div>
           </CardContent>
           <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
         </Card>
 
-        {/* Pending Surveys */}
+        {/* In Progress Tasks */}
         <Card 
-          className="relative overflow-hidden cursor-pointer hover:border-primary/50 transition-all shadow-md group py-2"
-          onClick={() => navigate('/portal/technician/surveys?tab=In Progress')}
+          className="relative overflow-hidden cursor-pointer hover:border-primary/50 transition-all shadow-md group py-1"
+          onClick={() => navigate('/portal/technician/tasks?status=In_Progress')}
         >
           <CardContent className="p-5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -126,21 +127,21 @@ export default function TechnicianDashboard() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-foreground">In Progress</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Active inspection drafts</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Active field installations</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-black text-amber-500 tracking-tight">{stats.inProgressSurveys}</span>
+              <span className="text-2xl font-black text-amber-500 tracking-tight">{stats.inProgressTasks}</span>
               <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
             </div>
           </CardContent>
           <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500"></div>
         </Card>
 
-        {/* Completed Surveys */}
+        {/* Completed Tasks */}
         <Card 
-          className="relative overflow-hidden cursor-pointer hover:border-primary/50 transition-all shadow-md group py-2"
-          onClick={() => navigate('/portal/technician/surveys?tab=Completed')}
+          className="relative overflow-hidden cursor-pointer hover:border-primary/50 transition-all shadow-md group py-1"
+          onClick={() => navigate('/portal/technician/tasks?status=Completed')}
         >
           <CardContent className="p-5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -148,12 +149,12 @@ export default function TechnicianDashboard() {
                 <CheckCircle2 className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-foreground">Completed Surveys</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Finalized site observations</p>
+                <h3 className="text-base font-bold text-foreground">Completed</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Resolved and verified tasks</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-black text-emerald-500 tracking-tight">{stats.completedSurveys}</span>
+              <span className="text-2xl font-black text-emerald-500 tracking-tight">{stats.completedTasks}</span>
               <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
             </div>
           </CardContent>
@@ -162,21 +163,21 @@ export default function TechnicianDashboard() {
 
         {/* Today's Tasks */}
         <Card 
-          className="relative overflow-hidden cursor-pointer hover:border-primary/50 transition-all shadow-md group py-2"
-          onClick={() => navigate('/portal/technician/tasks')}
+          className="relative overflow-hidden cursor-pointer hover:border-primary/50 transition-all shadow-md group py-1"
+          onClick={() => navigate('/portal/technician/tasks?due=today')}
         >
           <CardContent className="p-5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-lg bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-500 flex items-center justify-center shrink-0">
-                <CheckSquare className="h-6 w-6" />
+                <FileClock className="h-6 w-6" />
               </div>
               <div>
                 <h3 className="text-base font-bold text-foreground">Today's Tasks</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">General work assignments due</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Jobs due for completion today</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-black text-indigo-500 tracking-tight">{stats.pendingTasks}</span>
+              <span className="text-2xl font-black text-indigo-500 tracking-tight">{stats.todaysTasks}</span>
               <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
             </div>
           </CardContent>

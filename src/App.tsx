@@ -14,15 +14,12 @@ import TechnicianLayout from "@/components/layout/TechnicianLayout"
 import Login from "@/pages/portal/Login"
 import ManagerDashboard from "@/pages/portal/ManagerDashboard"
 import TechnicianDashboard from "@/pages/portal/TechnicianDashboard"
-import Leads from "@/pages/portal/Leads"
-import Customers from "@/pages/portal/Customers"
 import Employees from "@/pages/portal/Employees"
-import Surveys from "@/pages/portal/Surveys"
-import TaskAssignment from "@/pages/portal/TaskAssignment"
+import ManagerTasks from "@/pages/portal/ManagerTasks"
 import Reports from "@/pages/portal/Reports"
-import MySurveys from "@/pages/portal/MySurveys"
-import SurveyDetail from "@/pages/portal/SurveyDetail"
+import GalleryManagement from "@/pages/portal/GalleryManagement"
 import MyTasks from "@/pages/portal/MyTasks"
+import TaskDetails from "@/pages/portal/TaskDetails"
 import SubmitReport from "@/pages/portal/SubmitReport"
 import Profile from "@/pages/portal/Profile"
 
@@ -88,11 +85,9 @@ export default function App() {
           >
             <Route index element={<Navigate to="/portal/manager/dashboard" replace />} />
             <Route path="dashboard" element={<ManagerDashboard />} />
-            <Route path="leads" element={<Leads />} />
-            <Route path="customers" element={<Customers />} />
             <Route path="employees" element={<Employees />} />
-            <Route path="surveys" element={<Surveys />} />
-            <Route path="tasks" element={<TaskAssignment />} />
+            <Route path="tasks" element={<ManagerTasks />} />
+            <Route path="gallery" element={<GalleryManagement />} />
             <Route path="reports" element={<Reports />} />
             <Route path="profile" element={<Profile />} />
           </Route>
@@ -108,9 +103,8 @@ export default function App() {
           >
             <Route index element={<Navigate to="/portal/technician/dashboard" replace />} />
             <Route path="dashboard" element={<TechnicianDashboard />} />
-            <Route path="surveys" element={<MySurveys />} />
-            <Route path="surveys/:surveyId" element={<SurveyDetail />} />
             <Route path="tasks" element={<MyTasks />} />
+            <Route path="tasks/:taskId" element={<TaskDetails />} />
             <Route path="submit-report" element={<SubmitReport />} />
             <Route path="profile" element={<Profile />} />
           </Route>

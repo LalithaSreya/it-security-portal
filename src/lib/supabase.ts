@@ -67,12 +67,32 @@ export interface Survey {
 
 export interface Task {
   id: string;
-  title: string;
+  task_title: string;
+  task_type: 'CCTV Installation' | 'CCTV Maintenance' | 'AMC Visit' | 'Site Survey' | 'Device Repair' | 'Fire Alarm Service' | 'Access Control Service' | 'Network Support' | 'Other';
+  customer_name: string;
+  customer_phone: string;
+  location: string;
   description: string;
-  assigned_technician: string; // references Employee ID
-  status: 'Pending' | 'Completed';
+  priority: 'Low' | 'Medium' | 'High' | 'Emergency';
+  assigned_technician: string | null; // references Employee ID
+  assigned_by: string | null; // references Employee ID
   due_date: string;
+  status: 'Assigned' | 'In Progress' | 'Pending Verification' | 'Completed';
+  manager_notes?: string;
+  technician_notes?: string;
+  before_photos?: string[];
+  after_photos?: string[];
+  completion_photos?: string[];
+  completion_time?: string;
+  rejection_reason?: string;
+  activity_log?: {
+    type: string;
+    time: string;
+    desc: string;
+    user: string;
+  }[];
   created_at: string;
+  updated_at: string;
 }
 
 export interface Report {
@@ -82,6 +102,23 @@ export interface Report {
   location: string;
   report_type: string;
   description: string;
+  created_at: string;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+}
+
+export interface GalleryItem {
+  id: string;
+  title: string;
+  description?: string;
+  image_url: string;
   created_at: string;
 }
 
@@ -96,6 +133,8 @@ const STORAGE_KEYS = {
   SURVEYS: 'mock_supabase_surveys',
   TASKS: 'mock_supabase_tasks',
   REPORTS: 'mock_supabase_reports',
+  NOTIFICATIONS: 'mock_supabase_notifications',
+  GALLERY: 'mock_supabase_gallery',
   SESSION: 'mock_supabase_session',
 };
 
@@ -198,6 +237,125 @@ const initialCustomers: Customer[] = [
   },
 ];
 
+const initialTasks: Task[] = [
+  {
+    id: 'task-1',
+    task_title: 'CCTV Installation - Warehouse Site A',
+    task_type: 'CCTV Installation',
+    customer_name: 'David Lee (TechStart Co)',
+    customer_phone: '+1 (555) 654-3210',
+    location: '500 Innovation Way, Suite 100, Austin, TX 78701',
+    description: 'Mount and configure 12 IP cameras in the warehouse and main office lobby. Hook up to the NVR.',
+    priority: 'High',
+    assigned_technician: 'emp-tech-1',
+    assigned_by: 'emp-mgr-1',
+    due_date: new Date(Date.now() + 2 * 24 * 3600000).toISOString().split('T')[0],
+    status: 'Assigned',
+    manager_notes: 'Confirm standard mount brackets are in stock before heading out.',
+    technician_notes: '',
+    before_photos: [],
+    after_photos: [],
+    completion_photos: [],
+    activity_log: [
+      { type: 'status_change', time: new Date().toISOString(), desc: 'Task created and assigned to Alex Technician', user: 'Sarah Manager' }
+    ],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'task-2',
+    task_title: 'Fire Alarm Inspection',
+    task_type: 'Fire Alarm Service',
+    customer_name: 'MegaCorp Inc.',
+    customer_phone: '+1 (555) 888-9999',
+    location: '100 Financial District Blvd, Boston, MA 02110',
+    description: 'Perform safety inspection audit on all smoke detectors and pull stations on Floors 2 and 3.',
+    priority: 'Low',
+    assigned_technician: 'emp-tech-1',
+    assigned_by: 'emp-mgr-1',
+    due_date: new Date(Date.now() + 5 * 24 * 3600000).toISOString().split('T')[0],
+    status: 'In Progress',
+    manager_notes: 'Coordinated with facilities manager for floor access cards.',
+    technician_notes: 'Started scanning Floor 2 sensors. All clean so far.',
+    before_photos: [],
+    after_photos: [],
+    completion_photos: [],
+    activity_log: [
+      { type: 'status_change', time: new Date(Date.now() - 3600000).toISOString(), desc: 'Task created and assigned to Alex Technician', user: 'Sarah Manager' },
+      { type: 'status_change', time: new Date().toISOString(), desc: 'Task status updated to In Progress', user: 'Alex Technician' }
+    ],
+    created_at: new Date(Date.now() - 3600000).toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'task-3',
+    task_title: 'Emergency Access Control Repair',
+    task_type: 'Access Control Service',
+    customer_name: 'MegaCorp Inc.',
+    customer_phone: '+1 (555) 888-9999',
+    location: '100 Financial District Blvd, Boston, MA 02110',
+    description: 'Main lobby turnstile reader is offline and not responding to card swipes. Urgent repair needed.',
+    priority: 'Emergency',
+    assigned_technician: 'emp-tech-1',
+    assigned_by: 'emp-mgr-1',
+    due_date: new Date().toISOString().split('T')[0],
+    status: 'Assigned',
+    manager_notes: 'Urgent entry security issue.',
+    technician_notes: '',
+    before_photos: [],
+    after_photos: [],
+    completion_photos: [],
+    activity_log: [
+      { type: 'status_change', time: new Date().toISOString(), desc: 'Emergency task created and assigned to Alex Technician', user: 'Sarah Manager' }
+    ],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+];
+
+const initialGallery: GalleryItem[] = [
+  {
+    id: 'gal-1',
+    title: 'High-Tech Security Turnstiles',
+    description: 'Installed biometric glass security gates in the main corporate lobby of MegaCorp Boston.',
+    image_url: 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=600&auto=format&fit=crop',
+    created_at: new Date('2026-04-15').toISOString(),
+  },
+  {
+    id: 'gal-2',
+    title: 'Commercial CCTV Surveillance Center',
+    description: 'Mounted 24 IP cameras and configured the master monitoring wall display.',
+    image_url: 'https://images.unsplash.com/photo-1508873535684-277a3cbcc4e8?w=600&auto=format&fit=crop',
+    created_at: new Date('2026-05-10').toISOString(),
+  },
+  {
+    id: 'gal-3',
+    title: 'Access Control Panel Clean Wiring',
+    description: 'Structured card reader server cabinet wiring and safety fuses configuration.',
+    image_url: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=600&auto=format&fit=crop',
+    created_at: new Date('2026-05-28').toISOString(),
+  }
+];
+
+const initialNotifications: Notification[] = [
+  {
+    id: 'notif-1',
+    user_id: 'emp-tech-1',
+    title: 'New Emergency Task Assigned',
+    message: 'Lobby turnstile access reader repair is assigned to you. Due today.',
+    read: false,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'notif-2',
+    user_id: 'emp-mgr-1',
+    title: 'Task Started',
+    message: 'Alex Technician has marked Fire Alarm Inspection as In Progress.',
+    read: false,
+    created_at: new Date().toISOString(),
+  }
+];
+
 // Load helper
 const getStorageItem = <T>(key: string, fallback: T): T => {
   const item = localStorage.getItem(key);
@@ -221,6 +379,9 @@ if (!isRealSupabase) {
   getStorageItem(STORAGE_KEYS.LEADS, initialLeads);
   getStorageItem(STORAGE_KEYS.CUSTOMERS, initialCustomers);
   getStorageItem(STORAGE_KEYS.EMPLOYEES, initialEmployees);
+  getStorageItem(STORAGE_KEYS.TASKS, initialTasks);
+  getStorageItem(STORAGE_KEYS.NOTIFICATIONS, initialNotifications);
+  getStorageItem(STORAGE_KEYS.GALLERY, initialGallery);
 }
 
 // Chainable mock query builder class
@@ -251,6 +412,10 @@ class MockQueryBuilder {
       this.data = getStorageItem<Task[]>(STORAGE_KEYS.TASKS, []);
     } else if (this.tableName === 'reports') {
       this.data = getStorageItem<Report[]>(STORAGE_KEYS.REPORTS, []);
+    } else if (this.tableName === 'notifications') {
+      this.data = getStorageItem<Notification[]>(STORAGE_KEYS.NOTIFICATIONS, []);
+    } else if (this.tableName === 'gallery') {
+      this.data = getStorageItem<GalleryItem[]>(STORAGE_KEYS.GALLERY, []);
     }
   }
 
@@ -388,6 +553,10 @@ class MockQueryBuilder {
       setStorageItem(STORAGE_KEYS.TASKS, updatedData);
     } else if (this.tableName === 'reports') {
       setStorageItem(STORAGE_KEYS.REPORTS, updatedData);
+    } else if (this.tableName === 'notifications') {
+      setStorageItem(STORAGE_KEYS.NOTIFICATIONS, updatedData);
+    } else if (this.tableName === 'gallery') {
+      setStorageItem(STORAGE_KEYS.GALLERY, updatedData);
     }
   }
 }

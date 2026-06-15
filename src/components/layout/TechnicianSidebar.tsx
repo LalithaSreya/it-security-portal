@@ -5,7 +5,6 @@ import {
   LogOut, 
   ChevronRight,
   User,
-  ClipboardList,
   CheckSquare,
   FileText
 } from 'lucide-react';
@@ -30,11 +29,6 @@ export default function TechnicianSidebar({ onCloseMobile }: TechnicianSidebarPr
       name: 'Dashboard',
       path: '/portal/technician/dashboard',
       icon: LayoutDashboard,
-    },
-    {
-      name: 'My Surveys',
-      path: '/portal/technician/surveys',
-      icon: ClipboardList,
     },
     {
       name: 'My Tasks',
