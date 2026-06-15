@@ -9,7 +9,8 @@ import {
   LogOut, 
   Menu,
   ChevronRight,
-  User
+  User,
+  Globe
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
@@ -50,6 +51,12 @@ export default function PortalLayout() {
       path: '/portal/employees',
       icon: UserCheck,
       roles: ['Manager'], // Hidden for Technician
+    },
+    {
+      name: 'Company Info',
+      path: '/about-us',
+      icon: Globe,
+      roles: ['Manager', 'Technician'],
     },
   ];
 

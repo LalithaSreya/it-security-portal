@@ -15,11 +15,11 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
 
   const navLinks = [
-    { name: "Home", to: "/" },
-    { name: "About Us", to: "/about" },
-    { name: "Services", to: "/services" },
-    { name: "Gallery", to: "/gallery" },
-    { name: "Contact", to: "/contact" },
+    { name: "Home", to: "/about-us" },
+    { name: "About Us", to: "/about-us/about" },
+    { name: "Services", to: "/about-us/services" },
+    { name: "Gallery", to: "/about-us/gallery" },
+    { name: "Contact", to: "/about-us/contact" },
   ]
 
   const activeClassName = "text-primary font-semibold"
@@ -29,7 +29,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md supports-backdrop-filter:bg-background/60">
       <div className="container mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group">
+        <Link to="/about-us" className="flex items-center gap-2.5 group">
           <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-primary-foreground shadow-sm shadow-primary/30 group-hover:scale-105 transition-transform">
             <Shield className="w-5 h-5" />
           </div>
@@ -55,7 +55,7 @@ export default function Navbar() {
         <div className="flex items-center gap-4">
           <ThemeToggle />
           <Button asChild className="hidden md:inline-flex rounded-full">
-            <Link to="/contact">Request Quote</Link>
+            <Link to="/about-us/contact">Request Quote</Link>
           </Button>
 
           {/* Mobile Navigation */}
@@ -92,7 +92,7 @@ export default function Navbar() {
 
               <div className="border-t pt-4">
                 <Button asChild className="w-full rounded-xl" onClick={() => setIsOpen(false)}>
-                  <Link to="/contact">Get a Free Quote</Link>
+                  <Link to="/about-us/contact">Get a Free Quote</Link>
                 </Button>
               </div>
             </SheetContent>

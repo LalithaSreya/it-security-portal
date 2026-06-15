@@ -21,8 +21,11 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/* Root Redirect to Portal */}
+          <Route path="/" element={<Navigate to="/portal/dashboard" replace />} />
+
           {/* Public Routes */}
-          <Route path="/" element={<PublicLayout />}>
+          <Route path="/about-us" element={<PublicLayout />}>
             <Route index element={<Home />} />
             <Route path="about" element={<About />} />
             <Route path="services" element={<Services />} />
