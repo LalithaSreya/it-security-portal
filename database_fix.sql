@@ -1,8 +1,8 @@
 -- ==========================================
--- IT Security Portal Database Fix Script
+-- IT Security Portal Database Fix Script (v2 - Recursion Free)
 -- ==========================================
 -- Run this script in your Supabase SQL Editor (https://supabase.com/dashboard/project/_/sql)
--- to create the missing tables and correct the RLS write policies for Managers.
+-- to create the missing tables, correct RLS policies, and fix the 500 Internal Server Error recursion bug.
 
 -- 1. CREATE TASKS TABLE (IF NOT EXISTS)
 create table if not exists public.tasks (
@@ -23,14 +23,9 @@ drop policy if exists "Allow Managers full access to tasks" on public.tasks;
 drop policy if exists "Allow Technicians to view assigned tasks" on public.tasks;
 drop policy if exists "Allow Technicians to update assigned tasks" on public.tasks;
 
--- Recreate Task Policies checking role in public.employees table
+-- Recreate Task Policies (using fast and safe JWT role checks)
 create policy "Allow Managers full access to tasks" on public.tasks
-  for all using (
-    exists (
-      select 1 from public.employees
-      where id = auth.uid() and role = 'Manager'
-    )
-  );
+  for all using ((auth.jwt() -> 'user_metadata' ->> 'role') = 'Manager');
 
 create policy "Allow Technicians to view assigned tasks" on public.tasks
   for select using (assigned_technician = auth.uid());
@@ -58,14 +53,9 @@ drop policy if exists "Allow Managers to view all reports" on public.reports;
 drop policy if exists "Allow Technicians to insert reports" on public.reports;
 drop policy if exists "Allow Technicians to view own reports" on public.reports;
 
--- Recreate Report Policies checking role in public.employees table
+-- Recreate Report Policies (using fast and safe JWT role checks)
 create policy "Allow Managers to view all reports" on public.reports
-  for select using (
-    exists (
-      select 1 from public.employees
-      where id = auth.uid() and role = 'Manager'
-    )
-  );
+  for select using ((auth.jwt() -> 'user_metadata' ->> 'role') = 'Manager');
 
 create policy "Allow Technicians to insert reports" on public.reports
   for insert with check (submitted_by = auth.uid());
@@ -74,30 +64,23 @@ create policy "Allow Technicians to view own reports" on public.reports
   for select using (submitted_by = auth.uid());
 
 
--- 3. FIX EMPLOYEES TABLE RLS POLICIES
--- The old policy only allowed "Admin" to write. Since all administrative accounts 
--- have role = 'Manager', this blocked managers from adding, editing, or deleting employees.
-
--- Drop old employee write policy
+-- 3. FIX EMPLOYEES TABLE RLS POLICIES (RECURSION-FREE)
+-- Drop all old conflicting policies on employees table
 drop policy if exists "Allow Admins full write to employees" on public.employees;
 drop policy if exists "Allow Managers and Admins full write to employees" on public.employees;
 drop policy if exists "Allow employees to update own profile" on public.employees;
+drop policy if exists "Allow employees to update own record" on public.employees;
 drop policy if exists "Allow users to update own record" on public.employees;
-
--- Recreate write policy allowing both Managers and Admins to manage employees
-create policy "Allow Managers and Admins full write to employees" on public.employees
-  for all using (
-    exists (
-      select 1 from public.employees
-      where id = auth.uid() and role in ('Admin', 'Manager')
-    )
-  );
-
--- Create policy allowing any employee to update their own record (for Profile updates like phone number)
-create policy "Allow employees to update own record" on public.employees
-  for update using (auth.uid() = id) with check (auth.uid() = id);
-
--- Ensure all authenticated users can read the employees table
 drop policy if exists "Allow authenticated users to read employees" on public.employees;
+
+-- Policy A: Allow authenticated users to read employees list (simple, recursion-free check)
 create policy "Allow authenticated users to read employees" on public.employees
   for select using (auth.role() = 'authenticated');
+
+-- Policy B: Allow Managers and Admins to modify employee rows (uses JWT metadata to avoid table query recursion)
+create policy "Allow Managers and Admins to write employees" on public.employees
+  for all using ((auth.jwt() -> 'user_metadata' ->> 'role') in ('Admin', 'Manager'));
+
+-- Policy C: Allow individual employees to update their own profile details (recursion-free)
+create policy "Allow employees to update own record" on public.employees
+  for update using (auth.uid() = id) with check (auth.uid() = id);
