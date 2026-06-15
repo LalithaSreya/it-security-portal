@@ -9,7 +9,8 @@ import {
   Globe,
   CheckSquare,
   BarChart3,
-  Image
+  Image,
+  FileText
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,11 @@ export default function ManagerSidebar({ onCloseMobile }: ManagerSidebarProps) {
       name: 'Technicians',
       path: '/portal/manager/employees',
       icon: Users,
+    },
+    {
+      name: 'Customer Requests',
+      path: '/portal/manager/requests',
+      icon: FileText,
     },
     {
       name: 'Reports',

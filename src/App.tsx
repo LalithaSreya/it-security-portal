@@ -16,6 +16,7 @@ import ManagerDashboard from "@/pages/portal/ManagerDashboard"
 import TechnicianDashboard from "@/pages/portal/TechnicianDashboard"
 import Employees from "@/pages/portal/Employees"
 import ManagerTasks from "@/pages/portal/ManagerTasks"
+import CustomerRequests from "@/pages/portal/CustomerRequests"
 import Reports from "@/pages/portal/Reports"
 import GalleryManagement from "@/pages/portal/GalleryManagement"
 import MyTasks from "@/pages/portal/MyTasks"
@@ -87,6 +88,7 @@ export default function App() {
             <Route path="dashboard" element={<ManagerDashboard />} />
             <Route path="employees" element={<Employees />} />
             <Route path="tasks" element={<ManagerTasks />} />
+            <Route path="requests" element={<CustomerRequests />} />
             <Route path="gallery" element={<GalleryManagement />} />
             <Route path="reports" element={<Reports />} />
             <Route path="profile" element={<Profile />} />

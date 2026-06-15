@@ -2,15 +2,15 @@ import { useEffect, useState } from 'react';
 import { 
   Clock, 
   CheckCircle,
-  CheckSquare,
   AlertTriangle,
   FileClock,
   ArrowRight,
   TrendingUp,
-  UserCheck
+  UserCheck,
+  FileText
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { supabase, type Task, type Employee } from '@/lib/supabase';
+import { supabase, type Task, type Employee, type Lead } from '@/lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -25,11 +25,12 @@ interface TechPerformance {
 
 export default function ManagerDashboard() {
   const [stats, setStats] = useState({
-    totalTasks: 0,
+    totalRequests: 0,
     assignedTasks: 0,
     inProgressTasks: 0,
     pendingVerification: 0,
     completedTasks: 0,
+    activeTechnicians: 0,
     emergencyTasks: 0,
   });
   const [recentTasks, setRecentTasks] = useState<Task[]>([]);
@@ -40,21 +41,24 @@ export default function ManagerDashboard() {
     async function loadDashboardData() {
       setIsLoading(true);
       try {
-        // Fetch tasks and employees
-        const [tasksRes, employeesRes] = await Promise.all([
+        // Fetch tasks, employees, and leads
+        const [tasksRes, employeesRes, leadsRes] = await Promise.all([
           supabase.from('tasks').select('*'),
           supabase.from('employees').select('*'),
+          supabase.from('leads').select('*'),
         ]);
 
         const tasks: Task[] = tasksRes.data || [];
         const employees: Employee[] = employeesRes.data || [];
+        const leads: Lead[] = leadsRes.data || [];
 
         // 1. Calculate stats
-        const totalTasks = tasks.length;
+        const totalRequests = leads.length;
         const assignedTasks = tasks.filter(t => t.status === 'Assigned').length;
         const inProgressTasks = tasks.filter(t => t.status === 'In Progress').length;
         const pendingVerification = tasks.filter(t => t.status === 'Pending Verification').length;
         const completedTasks = tasks.filter(t => t.status === 'Completed').length;
+        const activeTechnicians = employees.filter(e => e.role === 'Technician' && e.status === 'Active').length;
         
         // Emergency tasks that are not completed
         const emergencyTasks = tasks.filter(
@@ -62,11 +66,12 @@ export default function ManagerDashboard() {
         ).length;
 
         setStats({
-          totalTasks,
+          totalRequests,
           assignedTasks,
           inProgressTasks,
           pendingVerification,
           completedTasks,
+          activeTechnicians,
           emergencyTasks,
         });
 
@@ -139,8 +144,8 @@ export default function ManagerDashboard() {
           <div className="h-8 w-48 animate-pulse rounded bg-muted"></div>
           <div className="h-4 w-72 animate-pulse rounded bg-muted"></div>
         </div>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-6">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-7">
+          {[1, 2, 3, 4, 5, 6, 7].map((i) => (
             <Card key={i} className="animate-pulse">
               <CardHeader className="pb-2">
                 <div className="h-4 w-24 rounded bg-muted"></div>
@@ -170,18 +175,18 @@ export default function ManagerDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-6">
-        {/* Total Tasks */}
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-7">
+        {/* Total Requests */}
         <Card className="relative overflow-hidden transition-all hover:shadow-md border-border/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Total Tasks
+              Total Requests
             </CardTitle>
-            <CheckSquare className="h-4.5 w-4.5 text-muted-foreground" />
+            <FileText className="h-4.5 w-4.5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold tracking-tight">{stats.totalTasks}</div>
-            <p className="text-[10px] text-muted-foreground mt-1">All lifecycle tasks</p>
+            <div className="text-2xl font-bold tracking-tight">{stats.totalRequests}</div>
+            <p className="text-[10px] text-muted-foreground mt-1">Customer dispatches</p>
           </CardContent>
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-400"></div>
         </Card>
@@ -190,7 +195,7 @@ export default function ManagerDashboard() {
         <Card className="relative overflow-hidden transition-all hover:shadow-md border-border/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Assigned
+              Open Tasks
             </CardTitle>
             <UserCheck className="h-4.5 w-4.5 text-blue-500" />
           </CardHeader>
@@ -220,13 +225,13 @@ export default function ManagerDashboard() {
         <Card className="relative overflow-hidden transition-all hover:shadow-md border-border/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Verification
+              Pending Review
             </CardTitle>
             <FileClock className="h-4.5 w-4.5 text-purple-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold tracking-tight text-purple-500">{stats.pendingVerification}</div>
-            <p className="text-[10px] text-muted-foreground mt-1">Awaiting review</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Awaiting verification</p>
           </CardContent>
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-purple-500"></div>
         </Card>
@@ -241,9 +246,24 @@ export default function ManagerDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold tracking-tight text-emerald-500">{stats.completedTasks}</div>
-            <p className="text-[10px] text-muted-foreground mt-1">Verified & Closed</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Closed successfully</p>
           </CardContent>
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500"></div>
+        </Card>
+
+        {/* Active Technicians */}
+        <Card className="relative overflow-hidden transition-all hover:shadow-md border-border/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Active Techs
+            </CardTitle>
+            <TrendingUp className="h-4.5 w-4.5 text-indigo-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold tracking-tight text-indigo-500">{stats.activeTechnicians}</div>
+            <p className="text-[10px] text-muted-foreground mt-1">Active field workforce</p>
+          </CardContent>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-500"></div>
         </Card>
 
         {/* Emergency Tasks */}
@@ -256,7 +276,7 @@ export default function ManagerDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold tracking-tight text-rose-500">{stats.emergencyTasks}</div>
-            <p className="text-[10px] text-rose-500/70 mt-1">Urgent dispatches</p>
+            <p className="text-[10px] text-rose-500/70 mt-1">Critical alerts</p>
           </CardContent>
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-rose-500"></div>
         </Card>

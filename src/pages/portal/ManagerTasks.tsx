@@ -55,6 +55,7 @@ export default function ManagerTasks() {
   const [isTimelineOpen, setIsTimelineOpen] = useState(false);
   const [rejectMode, setRejectMode] = useState(false);
   const [rejectionNotes, setRejectionNotes] = useState('');
+  const [publishToGallery, setPublishToGallery] = useState(false);
 
   // Form States
   const [formTitle, setFormTitle] = useState('');
@@ -909,6 +910,22 @@ export default function ManagerTasks() {
                     placeholder="Enter explicit instructions on what needs to be fixed..."
                     rows={3}
                   />
+                </div>
+              )}
+
+              {/* Add to Gallery Option */}
+              {selectedTask && !rejectMode && (
+                <div className="flex items-center space-x-2 border-t pt-3 mt-3 animate-fadeIn">
+                  <input
+                    type="checkbox"
+                    id="publish-gallery"
+                    checked={publishToGallery}
+                    onChange={(e) => setPublishToGallery(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                  />
+                  <label htmlFor="publish-gallery" className="text-[11px] font-extrabold text-foreground cursor-pointer select-none">
+                    Publish to Public Project Showcase Gallery (uses technician's completion photo evidence)
+                  </label>
                 </div>
               )}
             </div>
