@@ -8,7 +8,7 @@ import {
   UserCheck,
   ShieldAlert
 } from 'lucide-react';
-import { supabase, type Employee } from '@/lib/supabase';
+import { supabase, type Employee, isUsingMock } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +55,7 @@ export default function Employees() {
   const [empPhone, setEmpPhone] = useState('');
   const [empRole, setEmpRole] = useState<'Manager' | 'Technician'>('Technician');
   const [empStatus, setEmpStatus] = useState<'Active' | 'Inactive'>('Active');
+  const [empPassword, setEmpPassword] = useState('password123'); // Default password for new auth account
   const [isSaving, setIsSaving] = useState(false);
 
   // Delete Confirm Dialog State
@@ -90,6 +91,7 @@ export default function Employees() {
     setEmpPhone('');
     setEmpRole('Technician');
     setEmpStatus('Active');
+    setEmpPassword('password123');
     setIsOpen(true);
   };
 
@@ -128,26 +130,80 @@ export default function Employees() {
         alert('Employee updated successfully!');
       } else {
         // Add Mode
-        // Create a unique id for mock auth user linking
-        const newId = `emp-${Math.random().toString(36).substr(2, 9)}`;
-        const { error } = await supabase.from('employees').insert({
-          id: newId,
-          employee_name: empName,
-          email: empEmail,
-          phone: empPhone,
-          role: empRole,
-          status: empStatus,
-        });
+        if (!isUsingMock) {
+          // Real Supabase backend:
+          // Call the signUp API via raw fetch to create the auth.users account without signing out the Manager.
+          const rawUrl = import.meta.env.VITE_SUPABASE_URL || '';
+          let cleanUrl = rawUrl.trim();
+          if (cleanUrl.endsWith('/')) cleanUrl = cleanUrl.slice(0, -1);
+          if (cleanUrl.endsWith('/rest/v1')) cleanUrl = cleanUrl.slice(0, -8);
+          if (cleanUrl.endsWith('/')) cleanUrl = cleanUrl.slice(0, -1);
 
-        if (error) throw error;
-        alert('New employee added successfully!');
+          const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+          if (!cleanUrl || !anonKey) {
+            throw new Error('Supabase URL or Anon key is missing in environment variables.');
+          }
+
+          const response = await fetch(`${cleanUrl}/auth/v1/signup`, {
+            method: 'POST',
+            headers: {
+              'apikey': anonKey,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              email: empEmail.trim(),
+              password: empPassword,
+              options: {
+                data: {
+                  employee_name: empName.trim(),
+                  role: empRole,
+                  phone: empPhone.trim()
+                }
+              }
+            })
+          });
+
+          if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData?.error_description || errData?.msg || errData?.message || 'Failed to register authentication account.');
+          }
+
+          const resData = await response.json();
+          const userId = resData?.user?.id;
+
+          if (userId && empStatus === 'Inactive') {
+            // Wait brief moment for DB sync trigger to finish inserting profile row
+            await new Promise(resolve => setTimeout(resolve, 800));
+            await supabase
+              .from('employees')
+              .update({ status: 'Inactive' })
+              .eq('id', userId);
+          }
+
+          alert('New employee added successfully!');
+        } else {
+          // Mock local storage mode:
+          const newId = `emp-${Math.random().toString(36).substr(2, 9)}`;
+          const { error } = await supabase.from('employees').insert({
+            id: newId,
+            employee_name: empName,
+            email: empEmail,
+            phone: empPhone,
+            role: empRole,
+            status: empStatus,
+          });
+
+          if (error) throw error;
+          alert('New employee added successfully!');
+        }
       }
 
       setIsOpen(false);
       loadEmployees();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving employee:', err);
-      alert('Failed to save employee record.');
+      alert(err.message || 'Failed to save employee record.');
     } finally {
       setIsSaving(false);
     }
@@ -384,6 +440,20 @@ export default function Employees() {
                 />
               </div>
             </div>
+
+            {!selectedEmp && (
+              <div className="space-y-2">
+                <Label htmlFor="emp-password">Login Password (for new staff)</Label>
+                <Input
+                  id="emp-password"
+                  type="password"
+                  value={empPassword}
+                  onChange={(e) => setEmpPassword(e.target.value)}
+                  placeholder="Minimum 6 characters (default: password123)"
+                  disabled={isSaving}
+                />
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
