@@ -68,6 +68,16 @@ export default function Leads() {
   const [formStatus, setFormStatus] = useState<Lead['status']>('New');
   const [isSavingLead, setIsSavingLead] = useState(false);
 
+  // Survey Dialog State
+  const [isSurveyOpen, setIsSurveyOpen] = useState(false);
+  const [technicians, setTechnicians] = useState<any[]>([]);
+  const [surveyCustName, setSurveyCustName] = useState('');
+  const [surveyService, setSurveyService] = useState('');
+  const [surveyLocation, setSurveyLocation] = useState('');
+  const [surveyTechId, setSurveyTechId] = useState('');
+  const [surveyDate, setSurveyDate] = useState('');
+  const [isSavingSurvey, setIsSavingSurvey] = useState(false);
+
   // Conversion Modal State
   const [leadToConvert, setLeadToConvert] = useState<Lead | null>(null);
   const [isConvertOpen, setIsConvertOpen] = useState(false);
@@ -100,8 +110,23 @@ export default function Leads() {
     }
   };
 
+  const loadTechnicians = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('role', 'Technician')
+        .eq('status', 'Active');
+      if (error) throw error;
+      setTechnicians(data || []);
+    } catch (err) {
+      console.error('Error loading technicians:', err);
+    }
+  };
+
   useEffect(() => {
     loadLeads();
+    loadTechnicians();
   }, []);
 
   const handleUpdateStatus = async (leadId: string, newStatus: Lead['status']) => {
@@ -194,6 +219,66 @@ export default function Leads() {
       alert('Failed to save lead.');
     } finally {
       setIsSavingLead(false);
+    }
+  };
+
+  const openSurveyDialog = (lead: Lead) => {
+    setSurveyCustName(lead.name);
+    setSurveyService(lead.service_required);
+    setSurveyLocation(lead.city);
+    setSurveyTechId('');
+    // Default to tomorrow's date
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setSurveyDate(tomorrow.toISOString().split('T')[0]);
+    setIsSurveyOpen(true);
+  };
+
+  const handleCreateSurvey = async () => {
+    if (!selectedLead) return;
+    if (!surveyTechId) {
+      alert('Please select a technician to assign.');
+      return;
+    }
+    if (!surveyDate) {
+      alert('Please select a survey date.');
+      return;
+    }
+
+    setIsSavingSurvey(true);
+    try {
+      // 1. Insert survey record
+      const { error: surveyError } = await supabase
+        .from('surveys')
+        .insert({
+          lead_id: selectedLead.id,
+          customer_name: surveyCustName,
+          service_type: surveyService,
+          location: surveyLocation,
+          assigned_technician: surveyTechId,
+          survey_date: surveyDate,
+          status: 'Assigned',
+          photos: []
+        });
+
+      if (surveyError) throw surveyError;
+
+      // 2. Update lead status to 'Qualified' if it is 'New' or 'Contacted'
+      if (selectedLead.status === 'New' || selectedLead.status === 'Contacted') {
+        await supabase
+          .from('leads')
+          .update({ status: 'Qualified' })
+          .eq('id', selectedLead.id);
+      }
+
+      alert('Survey assigned and created successfully!');
+      setIsSurveyOpen(false);
+      loadLeads();
+    } catch (err) {
+      console.error('Error creating survey:', err);
+      alert('Failed to create survey.');
+    } finally {
+      setIsSavingSurvey(false);
     }
   };
 
@@ -545,14 +630,111 @@ export default function Leads() {
               Close
             </Button>
             {selectedLead && selectedLead.status !== 'Converted' && (
-              <Button onClick={() => {
-                setIsDetailOpen(false);
-                openConversionDialog(selectedLead);
-              }}>
-                <UserCheck className="mr-2 h-4 w-4" />
-                Convert to Customer
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => {
+                    setIsDetailOpen(false);
+                    openSurveyDialog(selectedLead);
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Assign Survey
+                </Button>
+                <Button onClick={() => {
+                  setIsDetailOpen(false);
+                  openConversionDialog(selectedLead);
+                }}>
+                  <UserCheck className="mr-2 h-4 w-4" />
+                  Convert to Customer
+                </Button>
+              </div>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Survey Dialog */}
+      <Dialog open={isSurveyOpen} onOpenChange={setIsSurveyOpen}>
+        <DialogContent className="sm:max-w-[500px] border-border bg-card">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              Assign Site Survey
+            </DialogTitle>
+            <DialogDescription>
+              Schedule a site survey and assign a technician to inspect the premises.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-3 text-sm">
+            <div className="space-y-2">
+              <Label htmlFor="survey-cust">Customer Name</Label>
+              <Input
+                id="survey-cust"
+                value={surveyCustName}
+                onChange={(e) => setSurveyCustName(e.target.value)}
+                placeholder="Customer Name"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="survey-service">Service Type</Label>
+                <Input
+                  id="survey-service"
+                  value={surveyService}
+                  onChange={(e) => setSurveyService(e.target.value)}
+                  placeholder="e.g. CCTV Installation"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="survey-loc">Location / City</Label>
+                <Input
+                  id="survey-loc"
+                  value={surveyLocation}
+                  onChange={(e) => setSurveyLocation(e.target.value)}
+                  placeholder="e.g. New York"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="survey-tech">Assign Technician</Label>
+                <select
+                  id="survey-tech"
+                  value={surveyTechId}
+                  onChange={(e) => setSurveyTechId(e.target.value)}
+                  className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-foreground bg-card"
+                >
+                  <option value="">Select Technician</option>
+                  {technicians.map((tech) => (
+                    <option key={tech.id} value={tech.id}>
+                      {tech.employee_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="survey-date">Scheduled Date</Label>
+                <Input
+                  id="survey-date"
+                  type="date"
+                  value={surveyDate}
+                  onChange={(e) => setSurveyDate(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSurveyOpen(false)} disabled={isSavingSurvey}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateSurvey} disabled={isSavingSurvey}>
+              {isSavingSurvey ? 'Assigning...' : 'Assign & Create Survey'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

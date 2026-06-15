@@ -51,6 +51,40 @@ export interface Employee {
   created_at: string;
 }
 
+export interface Survey {
+  id: string;
+  lead_id?: string;
+  customer_name: string;
+  service_type: string;
+  location: string;
+  assigned_technician: string; // references Employee ID
+  survey_date: string;
+  remarks?: string;
+  photos: string[];
+  status: 'Assigned' | 'In Progress' | 'Completed' | 'Approved';
+  created_at: string;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description: string;
+  assigned_technician: string; // references Employee ID
+  status: 'Pending' | 'Completed';
+  due_date: string;
+  created_at: string;
+}
+
+export interface Report {
+  id: string;
+  submitted_by: string; // references Employee ID
+  customer_name: string;
+  location: string;
+  report_type: string;
+  description: string;
+  created_at: string;
+}
+
 // -------------------------------------------------------------
 // MOCK DATABASE & CLIENT IMPLEMENTATION
 // -------------------------------------------------------------
@@ -59,6 +93,9 @@ const STORAGE_KEYS = {
   LEADS: 'mock_supabase_leads',
   CUSTOMERS: 'mock_supabase_customers',
   EMPLOYEES: 'mock_supabase_employees',
+  SURVEYS: 'mock_supabase_surveys',
+  TASKS: 'mock_supabase_tasks',
+  REPORTS: 'mock_supabase_reports',
   SESSION: 'mock_supabase_session',
 };
 
@@ -208,6 +245,12 @@ class MockQueryBuilder {
       this.data = getStorageItem<Customer[]>(STORAGE_KEYS.CUSTOMERS, []);
     } else if (this.tableName === 'employees') {
       this.data = getStorageItem<Employee[]>(STORAGE_KEYS.EMPLOYEES, []);
+    } else if (this.tableName === 'surveys') {
+      this.data = getStorageItem<Survey[]>(STORAGE_KEYS.SURVEYS, []);
+    } else if (this.tableName === 'tasks') {
+      this.data = getStorageItem<Task[]>(STORAGE_KEYS.TASKS, []);
+    } else if (this.tableName === 'reports') {
+      this.data = getStorageItem<Report[]>(STORAGE_KEYS.REPORTS, []);
     }
   }
 
@@ -339,6 +382,12 @@ class MockQueryBuilder {
       setStorageItem(STORAGE_KEYS.CUSTOMERS, updatedData);
     } else if (this.tableName === 'employees') {
       setStorageItem(STORAGE_KEYS.EMPLOYEES, updatedData);
+    } else if (this.tableName === 'surveys') {
+      setStorageItem(STORAGE_KEYS.SURVEYS, updatedData);
+    } else if (this.tableName === 'tasks') {
+      setStorageItem(STORAGE_KEYS.TASKS, updatedData);
+    } else if (this.tableName === 'reports') {
+      setStorageItem(STORAGE_KEYS.REPORTS, updatedData);
     }
   }
 }
@@ -416,12 +465,39 @@ const mockAuthService = {
   },
 };
 
+const mockStorageService = {
+  from(_bucketName: string) {
+    return {
+      async upload(path: string, _file: File) {
+        // Return dummy success object
+        return { data: { path }, error: null };
+      },
+      getPublicUrl(path: string) {
+        const securityImages = [
+          'https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=600&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1508873535684-277a3cbcc4e8?w=600&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=600&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1510511459019-5dda7724fd87?w=600&auto=format&fit=crop',
+        ];
+        // Consistent index based on filename hash
+        let hash = 0;
+        for (let i = 0; i < path.length; i++) {
+          hash = path.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const index = Math.abs(hash) % securityImages.length;
+        return { data: { publicUrl: securityImages[index] } };
+      }
+    };
+  }
+};
+
 // Expose Mock Client
 const mockSupabase = {
   from(tableName: string) {
     return new MockQueryBuilder(tableName);
   },
   auth: mockAuthService,
+  storage: mockStorageService,
 };
 
 // -------------------------------------------------------------

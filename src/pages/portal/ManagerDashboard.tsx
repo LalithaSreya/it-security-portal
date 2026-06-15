@@ -3,23 +3,27 @@ import {
   Contact2, 
   Users, 
   UserCheck, 
-  TrendingUp, 
   FileText, 
   ArrowRight,
-  Clock
+  Clock,
+  ClipboardList,
+  CheckCircle,
+  CalendarDays,
+  CheckSquare
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { supabase, type Lead, type Customer, type Employee } from '@/lib/supabase';
+import { supabase, type Lead, type Customer, type Employee, type Survey } from '@/lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-export default function Dashboard() {
+export default function ManagerDashboard() {
   const [stats, setStats] = useState({
     totalLeads: 0,
     totalCustomers: 0,
     totalEmployees: 0,
-    newLeads: 0,
-    convertedLeads: 0,
+    pendingSurveys: 0,
+    todaysAssignments: 0,
+    completedSurveys: 0,
   });
   const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,30 +32,45 @@ export default function Dashboard() {
     async function loadDashboardData() {
       setIsLoading(true);
       try {
-        // Fetch all tables
-        const [leadsRes, customersRes, employeesRes] = await Promise.all([
+        const [leadsRes, customersRes, employeesRes, surveysRes] = await Promise.all([
           supabase.from('leads').select('*'),
           supabase.from('customers').select('*'),
           supabase.from('employees').select('*'),
+          supabase.from('surveys').select('*'),
         ]);
 
         const leads: Lead[] = leadsRes.data || [];
         const customers: Customer[] = customersRes.data || [];
         const employees: Employee[] = employeesRes.data || [];
+        const surveys: Survey[] = surveysRes.data || [];
+
+        const todayStr = new Date().toISOString().split('T')[0];
 
         // Calculate stats
         const totalLeads = leads.length;
         const totalCustomers = customers.length;
         const totalEmployees = employees.length;
-        const newLeads = leads.filter((l) => l.status === 'New').length;
-        const convertedLeads = leads.filter((l) => l.status === 'Converted').length;
+        
+        // Pending: status is 'Assigned' or 'In Progress'
+        const pendingSurveys = surveys.filter(
+          (s) => s.status === 'Assigned' || s.status === 'In Progress'
+        ).length;
+
+        // Today's assignments: matching scheduled date
+        const todaysAssignments = surveys.filter(
+          (s) => s.survey_date === todayStr
+        ).length;
+
+        // Completed surveys: waiting for manager approval
+        const completedSurveys = surveys.filter((s) => s.status === 'Completed').length;
 
         setStats({
           totalLeads,
           totalCustomers,
           totalEmployees,
-          newLeads,
-          convertedLeads,
+          pendingSurveys,
+          todaysAssignments,
+          completedSurveys,
         });
 
         // Get recent 5 leads, sorted by created_at desc
@@ -60,7 +79,7 @@ export default function Dashboard() {
         );
         setRecentLeads(sortedLeads.slice(0, 5));
       } catch (err) {
-        console.error('Error fetching dashboard statistics:', err);
+        console.error('Error fetching manager dashboard statistics:', err);
       } finally {
         setIsLoading(false);
       }
@@ -93,8 +112,8 @@ export default function Dashboard() {
           <div className="h-8 w-48 animate-pulse rounded bg-muted"></div>
           <div className="h-4 w-72 animate-pulse rounded bg-muted"></div>
         </div>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
-          {[1, 2, 3, 4, 5].map((i) => (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <Card key={i} className="animate-pulse">
               <CardHeader className="pb-2">
                 <div className="h-4 w-24 rounded bg-muted"></div>
@@ -117,14 +136,14 @@ export default function Dashboard() {
     <div className="space-y-8">
       {/* Title */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Operational Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Welcome to the IT Security & Solutions Management Portal.
+          Real-time visibility into leads, personnel, surveys, and business operations.
         </p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-6">
         {/* Total Leads */}
         <Card className="relative overflow-hidden transition-all hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
@@ -135,12 +154,12 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold tracking-tight">{stats.totalLeads}</div>
-            <p className="text-[10px] text-muted-foreground mt-1">Total inquiries received</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Acquired inquiries</p>
           </CardContent>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500"></div>
         </Card>
 
-        {/* Total Customers */}
+        {/* Active Customers */}
         <Card className="relative overflow-hidden transition-all hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -150,9 +169,9 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold tracking-tight">{stats.totalCustomers}</div>
-            <p className="text-[10px] text-muted-foreground mt-1">Active customer accounts</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Active customer bases</p>
           </CardContent>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500"></div>
         </Card>
 
         {/* Total Employees */}
@@ -165,41 +184,58 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold tracking-tight">{stats.totalEmployees}</div>
-            <p className="text-[10px] text-muted-foreground mt-1">Registered team members</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Registered profiles</p>
           </CardContent>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-fuchsia-500"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-purple-500"></div>
         </Card>
 
-        {/* New Leads */}
+        {/* Pending Surveys */}
         <Card className="relative overflow-hidden transition-all hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              New Leads
+              Pending Surveys
             </CardTitle>
-            <Clock className="h-4.5 w-4.5 text-muted-foreground" />
+            <Clock className="h-4.5 w-4.5 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold tracking-tight text-blue-500 dark:text-blue-400">
-              {stats.newLeads}
+            <div className="text-2xl font-bold tracking-tight text-amber-500">
+              {stats.pendingSurveys}
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1">Requires follow-up action</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Scheduled / In progress</p>
           </CardContent>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-amber-500"></div>
         </Card>
 
-        {/* Converted Leads */}
+        {/* Today's Assignments */}
         <Card className="relative overflow-hidden transition-all hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Converted
+              Today's Work
             </CardTitle>
-            <TrendingUp className="h-4.5 w-4.5 text-muted-foreground" />
+            <CalendarDays className="h-4.5 w-4.5 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold tracking-tight text-emerald-500 dark:text-emerald-400">
-              {stats.convertedLeads}
+            <div className="text-2xl font-bold tracking-tight text-indigo-500">
+              {stats.todaysAssignments}
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1">Conversion rate: {stats.totalLeads > 0 ? Math.round((stats.convertedLeads / stats.totalLeads) * 100) : 0}%</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Assigned for today</p>
+          </CardContent>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-500"></div>
+        </Card>
+
+        {/* Completed Surveys */}
+        <Card className="relative overflow-hidden transition-all hover:shadow-md">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Completed
+            </CardTitle>
+            <CheckCircle className="h-4.5 w-4.5 text-emerald-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold tracking-tight text-emerald-500">
+              {stats.completedSurveys}
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">Awaiting approval</p>
           </CardContent>
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500"></div>
         </Card>
@@ -215,7 +251,7 @@ export default function Dashboard() {
               <CardDescription>Latest contact inquiries received from company website</CardDescription>
             </div>
             <Button variant="outline" size="sm" asChild>
-              <Link to="/portal/leads">
+              <Link to="/portal/manager/leads">
                 View All
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
@@ -269,27 +305,33 @@ export default function Dashboard() {
         {/* Quick Operations panel */}
         <Card className="border-border/50">
           <CardHeader>
-            <CardTitle className="text-lg font-bold">Quick Operations</CardTitle>
-            <CardDescription>Shortcut actions for administration</CardDescription>
+            <CardTitle className="text-lg font-bold">Quick Shortcuts</CardTitle>
+            <CardDescription>Shortcut actions for operational managers</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col gap-2.5">
               <Button className="w-full justify-start text-left" variant="outline" asChild>
-                <Link to="/portal/leads">
+                <Link to="/portal/manager/leads">
                   <Contact2 className="mr-2 h-4 w-4" />
                   Manage Leads
                 </Link>
               </Button>
               <Button className="w-full justify-start text-left" variant="outline" asChild>
-                <Link to="/portal/customers">
-                  <Users className="mr-2 h-4 w-4" />
-                  Manage Customers
+                <Link to="/portal/manager/surveys">
+                  <ClipboardList className="mr-2 h-4 w-4" />
+                  Manage Surveys
                 </Link>
               </Button>
               <Button className="w-full justify-start text-left" variant="outline" asChild>
-                <Link to="/portal/employees">
-                  <UserCheck className="mr-2 h-4 w-4" />
-                  Manage Employees
+                <Link to="/portal/manager/tasks">
+                  <CheckSquare className="mr-2 h-4 w-4" />
+                  Task Assignment
+                </Link>
+              </Button>
+              <Button className="w-full justify-start text-left" variant="outline" asChild>
+                <Link to="/portal/manager/customers">
+                  <Users className="mr-2 h-4 w-4" />
+                  Manage Customers
                 </Link>
               </Button>
             </div>
@@ -297,10 +339,10 @@ export default function Dashboard() {
             <div className="rounded-lg border border-dashed p-4.5 bg-muted/20">
               <div className="flex items-center gap-2.5 mb-2">
                 <FileText className="h-4.5 w-4.5 text-primary" />
-                <h4 className="text-xs font-bold text-foreground">Phase 2 Scope</h4>
+                <h4 className="text-xs font-bold text-foreground">Operational Overview</h4>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                We are currently running the Internal Portal Foundation. Real database updates will apply to local storage mock data unless a real Supabase URL is specified in the environment file.
+                As a Manager, you possess administrative access to generate site surveys, delegate assignments to field technicians, register accounts, and approve final reports.
               </p>
             </div>
           </CardContent>
