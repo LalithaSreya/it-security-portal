@@ -489,6 +489,17 @@ class MockQueryBuilder {
         resolve({ data: result, error: null });
       } else if (this.op === 'insert') {
         const itemsToInsert = Array.isArray(this.opValues) ? this.opValues : [this.opValues];
+        
+        // Enforce backend phone validation in mock client
+        for (const item of itemsToInsert) {
+          const phoneVal = item.phone !== undefined ? item.phone : item.customer_phone;
+          if (phoneVal !== undefined && phoneVal !== null && phoneVal !== '') {
+            if (!/^[0-9]{10,15}$/.test(phoneVal)) {
+              throw new Error('Backend Validation Error: Phone number must be between 10 and 15 digits (digits only).');
+            }
+          }
+        }
+
         const createdItems = itemsToInsert.map((item) => {
           const newItem = {
             id: item.id || `${this.tableName.slice(0, -1)}-${Math.random().toString(36).substr(2, 9)}`,
@@ -503,6 +514,14 @@ class MockQueryBuilder {
 
         resolve({ data: createdItems, error: null });
       } else if (this.op === 'update') {
+        // Enforce backend phone validation in mock client
+        const phoneVal = this.opValues.phone !== undefined ? this.opValues.phone : this.opValues.customer_phone;
+        if (phoneVal !== undefined && phoneVal !== null && phoneVal !== '') {
+          if (!/^[0-9]{10,15}$/.test(phoneVal)) {
+            throw new Error('Backend Validation Error: Phone number must be between 10 and 15 digits (digits only).');
+          }
+        }
+
         // Find matching items from filters
         let matchingIds: string[] = [];
         let filteredData = [...this.data];
@@ -564,9 +583,9 @@ class MockQueryBuilder {
 
 // Mock Auth system
 const mockAuthService = {
-  async signInWithPassword({ email, password: _password }: any) {
+  async signInWithPassword({ email, password }: any) {
     const employees = getStorageItem<Employee[]>(STORAGE_KEYS.EMPLOYEES, []);
-    const matchingEmp = employees.find((emp) => emp.email.toLowerCase() === email.toLowerCase());
+    const matchingEmp = employees.find((emp) => emp.email.toLowerCase() === email.toLowerCase()) as any;
 
     if (!matchingEmp) {
       return { data: { user: null, session: null }, error: { message: 'Invalid credentials or user does not exist' } };
@@ -576,7 +595,12 @@ const mockAuthService = {
       return { data: { user: null, session: null }, error: { message: 'Account is inactive. Contact Administrator.' } };
     }
 
-    // Accept any password for mock portal testing to make verification easier
+    // Verify password (default to 'password123' if not explicitly stored)
+    const expectedPassword = matchingEmp.password || 'password123';
+    if (password && password !== expectedPassword) {
+      return { data: { user: null, session: null }, error: { message: 'Invalid credentials or incorrect password.' } };
+    }
+
     const mockSession = {
       access_token: 'mock-jwt-token-xyz',
       user: {
@@ -596,6 +620,76 @@ const mockAuthService = {
     this.triggerStateChange(mockSession);
 
     return { data: mockSession, error: null };
+  },
+
+  async signUp({ email, password, options }: any) {
+    const employees = getStorageItem<any[]>(STORAGE_KEYS.EMPLOYEES, []);
+    const alreadyExists = employees.some((emp) => emp.email.toLowerCase() === email.toLowerCase());
+    if (alreadyExists) {
+      return { data: { user: null, session: null }, error: { message: 'User already exists' } };
+    }
+
+    const phone = options?.data?.phone || '';
+    if (phone && !/^[0-9]{10,15}$/.test(phone)) {
+      return { data: { user: null, session: null }, error: { message: 'Backend Validation Error: Phone number must be between 10 and 15 digits.' } };
+    }
+
+    const newEmp = {
+      id: `emp-mock-${Math.random().toString(36).substr(2, 9)}`,
+      employee_name: options?.data?.employee_name || 'New Staff',
+      role: options?.data?.role || 'Technician',
+      phone: phone,
+      email: email,
+      status: 'Active',
+      password: password || 'password123',
+      created_at: new Date().toISOString(),
+    };
+    employees.push(newEmp);
+    setStorageItem(STORAGE_KEYS.EMPLOYEES, employees);
+
+    const mockSession = {
+      access_token: 'mock-jwt-token-xyz',
+      user: {
+        id: newEmp.id,
+        email: newEmp.email,
+        role: 'authenticated',
+        user_metadata: {
+          employee_name: newEmp.employee_name,
+          role: newEmp.role,
+        },
+      },
+    };
+    setStorageItem(STORAGE_KEYS.SESSION, mockSession);
+    this.triggerStateChange(mockSession);
+    return { data: mockSession, error: null };
+  },
+
+  async resetPasswordForEmail(email: string, _options?: { redirectTo?: string }) {
+    const employees = getStorageItem<Employee[]>(STORAGE_KEYS.EMPLOYEES, []);
+    const matchingEmp = employees.find((emp) => emp.email.toLowerCase() === email.toLowerCase());
+    if (!matchingEmp) {
+      return { data: null, error: { message: 'No account found with this email address.' } };
+    }
+    return { data: {}, error: null };
+  },
+
+  async updateUser(attributes: { password?: string; data?: any }) {
+    const session = getStorageItem<any>(STORAGE_KEYS.SESSION, null);
+    if (!session?.user) {
+      return { data: null, error: { message: 'No active session found.' } };
+    }
+
+    if (attributes.password) {
+      const employees = getStorageItem<any[]>(STORAGE_KEYS.EMPLOYEES, []);
+      const updatedEmployees = employees.map((emp) => {
+        if (emp.id === session.user.id) {
+          return { ...emp, password: attributes.password };
+        }
+        return emp;
+      });
+      setStorageItem(STORAGE_KEYS.EMPLOYEES, updatedEmployees);
+    }
+    return { data: { user: session.user }, error: null };
   },
 
   async signOut() {

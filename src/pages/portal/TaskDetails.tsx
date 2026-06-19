@@ -399,7 +399,7 @@ export default function TaskDetails() {
   };
 
   return (
-    <div className="space-y-6 max-w-md mx-auto px-4 pb-16">
+    <div className="space-y-6 w-full px-4 pb-16">
       {/* Back Header Nav */}
       <div className="flex items-center justify-between py-1 border-b border-border/40">
         <Button 
@@ -411,14 +411,6 @@ export default function TaskDetails() {
           <ArrowLeft className="h-4 w-4 mr-1" />
           My Tasks
         </Button>
-        <div className="flex items-center gap-1.5">
-          <Badge className={`text-[9px] font-extrabold px-1.5 py-0 ${getPriorityBadgeColor(task.priority)}`}>
-            {task.priority}
-          </Badge>
-          <Badge variant="outline" className={`text-[9px] font-extrabold px-1.5 py-0 uppercase ${getStatusBadgeColor(task.status)}`}>
-            {task.status}
-          </Badge>
-        </div>
       </div>
 
       {/* Rejection Alert */}
@@ -435,226 +427,258 @@ export default function TaskDetails() {
         </Card>
       )}
 
-      {/* Main Info Card */}
-      <Card className="shadow-xs border-border/60 bg-card overflow-hidden">
-        <div className="p-4 space-y-3">
-          <span className="text-[10px] uppercase font-black text-primary tracking-wider">
-            {task.task_type}
-          </span>
-          <h1 className="text-lg font-bold text-foreground leading-snug">{task.task_title}</h1>
-          
-          <div className="space-y-2 pt-1">
-            <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
-              <Calendar className="h-4 w-4 text-primary shrink-0" />
-              <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
+      {/* Split Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 items-start">
+        {/* Left Panel (70%): Main Info, Site/Customer Info, Timeline */}
+        <div className="lg:col-span-7 space-y-6 flex flex-col">
+          {/* Main Info Card */}
+          <Card className="shadow-xs border-border/60 bg-card overflow-hidden">
+            <div className="p-4 space-y-3">
+              <span className="text-[10px] uppercase font-black text-primary tracking-wider">
+                {task.task_type}
+              </span>
+              <h1 className="text-lg font-bold text-foreground leading-snug">{task.task_title}</h1>
+              
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
+                  <Calendar className="h-4 w-4 text-primary shrink-0" />
+                  <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
+                </div>
+                <div className="text-xs leading-relaxed text-muted-foreground bg-muted/30 p-2.5 rounded-lg border border-border/40">
+                  <span className="block text-[10px] font-extrabold uppercase text-muted-foreground/60 mb-0.5">Manager Instructions</span>
+                  {task.description}
+                </div>
+              </div>
             </div>
-            <div className="text-xs leading-relaxed text-muted-foreground bg-muted/30 p-2.5 rounded-lg border border-border/40">
-              <span className="block text-[10px] font-extrabold uppercase text-muted-foreground/60 mb-0.5">Manager Instructions</span>
-              {task.description}
-            </div>
-          </div>
+          </Card>
+
+          {/* Site Customer Info Card */}
+          <Card className="shadow-xs border-border/60 bg-card">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between border-b pb-2">
+                <h3 className="text-xs font-bold uppercase text-foreground">Customer & Location</h3>
+              </div>
+              
+              <div className="space-y-2.5 text-xs font-semibold text-muted-foreground">
+                <div>
+                  <span className="block text-[10px] text-muted-foreground/60 font-bold">Contact Person</span>
+                  <span className="text-foreground font-extrabold">{task.customer_name}</span>
+                </div>
+
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <span className="block text-[10px] text-muted-foreground/60 font-bold">Phone Number</span>
+                    <span className="text-foreground">{task.customer_phone}</span>
+                  </div>
+                  <a 
+                    href={`tel:${task.customer_phone}`}
+                    className="h-8 px-3 rounded bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center gap-1.5 text-xs font-bold cursor-pointer"
+                  >
+                    <Phone className="h-3.5 w-3.5" />
+                    Call Client
+                  </a>
+                </div>
+
+                <div>
+                  <span className="block text-[10px] text-muted-foreground/60 font-bold">Site Address</span>
+                  <span className="text-foreground leading-relaxed block mb-1">{task.location}</span>
+                  <a 
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(task.location)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] text-primary hover:underline inline-flex items-center gap-1 font-bold"
+                  >
+                    <MapPin className="h-3 w-3" />
+                    Get GPS Directions
+                  </a>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ACTIVITY TIMELINE HISTORIAL */}
+          <Card className="shadow-xs border-border/60 bg-card">
+            <CardContent className="p-4 space-y-4">
+              <div className="flex items-center justify-between border-b pb-2">
+                <h3 className="text-xs font-bold uppercase text-foreground flex items-center gap-1">
+                  <History className="h-4 w-4 text-primary" />
+                  Task Timeline History
+                </h3>
+              </div>
+
+              <div className="space-y-4 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-border/60">
+                {task.activity_log && task.activity_log.length > 0 ? (
+                  task.activity_log.map((log, index) => (
+                    <div key={index} className="flex gap-3 text-xs relative pl-6">
+                      {/* Dot */}
+                      <div className={`absolute left-0.5 top-1 h-3 w-3 rounded-full border-2 ${
+                        log.type === 'status_change' && log.desc.includes('Completed') ? 'bg-emerald-500 border-emerald-200' :
+                        log.type === 'status_change' && log.desc.includes('In Progress') ? 'bg-amber-500 border-amber-200' :
+                        log.type === 'status_change' && log.desc.includes('verification') ? 'bg-purple-500 border-purple-200' :
+                        'bg-blue-500 border-blue-200'
+                      }`} />
+                      
+                      <div className="space-y-0.5">
+                        <span className="block font-bold text-foreground text-[11px]">{log.desc}</span>
+                        <span className="block text-[10px] text-muted-foreground">
+                          By {log.user} • {new Date(log.time).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-[10px] text-muted-foreground/60 italic text-center py-2">No events logged yet.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </Card>
 
-      {/* Site Customer Info Card */}
-      <Card className="shadow-xs border-border/60 bg-card">
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center justify-between border-b pb-2">
-            <h3 className="text-xs font-bold uppercase text-foreground">Customer & Location</h3>
-          </div>
-          
-          <div className="space-y-2.5 text-xs font-semibold text-muted-foreground">
-            <div>
-              <span className="block text-[10px] text-muted-foreground/60 font-bold">Contact Person</span>
-              <span className="text-foreground font-extrabold">{task.customer_name}</span>
-            </div>
-
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <span className="block text-[10px] text-muted-foreground/60 font-bold">Phone Number</span>
-                <span className="text-foreground">{task.customer_phone}</span>
+        {/* Right Panel (30%): Status Badges, Action Buttons, Photo Uploads */}
+        <div className="lg:col-span-3 space-y-6 flex flex-col">
+          {/* Status & Priority Badge Overview */}
+          <Card className="shadow-xs border-border/60 bg-card">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between border-b pb-2">
+                <h3 className="text-xs font-bold uppercase text-foreground">Task Overview</h3>
               </div>
-              <a 
-                href={`tel:${task.customer_phone}`}
-                className="h-8 px-3 rounded bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center gap-1.5 text-xs font-bold cursor-pointer"
-              >
-                <Phone className="h-3.5 w-3.5" />
-                Call Client
-              </a>
-            </div>
+              <div className="flex flex-col gap-3 pt-1">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Priority</span>
+                  <Badge className={`text-[10px] font-extrabold px-2.5 py-1 justify-center ${getPriorityBadgeColor(task.priority)}`}>
+                    {task.priority}
+                  </Badge>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Current Status</span>
+                  <Badge variant="outline" className={`text-[10px] font-extrabold px-2.5 py-1 justify-center uppercase ${getStatusBadgeColor(task.status)}`}>
+                    {task.status}
+                  </Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-            <div>
-              <span className="block text-[10px] text-muted-foreground/60 font-bold">Site Address</span>
-              <span className="text-foreground leading-relaxed block mb-1">{task.location}</span>
-              <a 
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(task.location)}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-[10px] text-primary hover:underline inline-flex items-center gap-1 font-bold"
-              >
-                <MapPin className="h-3 w-3" />
-                Get GPS Directions
-              </a>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* PHOTO EVIDENCE SECTION */}
-      <Card className="shadow-xs border-border/60 bg-card">
-        <CardContent className="p-4 space-y-4">
-          <div className="flex items-center justify-between border-b pb-2">
-            <h3 className="text-xs font-bold uppercase text-foreground flex items-center gap-1">
-              <Camera className="h-4 w-4 text-primary" />
-              Work Photo Evidence
-            </h3>
-          </div>
-
-          {errorMsg && (
-            <div className="bg-destructive/15 border border-destructive/20 text-destructive text-[11px] rounded-md p-2.5 font-semibold">
-              {errorMsg}
-            </div>
-          )}
-
-          <div className="space-y-4">
-            {renderPhotoEvidenceGrid('before', 'Before Photos')}
-            <div className="border-t border-border/40" />
-            {renderPhotoEvidenceGrid('after', 'After Photos')}
-            <div className="border-t border-border/40" />
-            {renderPhotoEvidenceGrid('completion', 'Completion / Sign-off')}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ACTION PANEL */}
-      <Card className="shadow-xs border-border/60 bg-card">
-        <CardContent className="p-4 space-y-4">
-          <div className="flex items-center justify-between border-b pb-2">
-            <h3 className="text-xs font-bold uppercase text-foreground flex items-center gap-1">
-              <FileText className="h-4 w-4 text-primary" />
-              Field Report & Status Action
-            </h3>
-          </div>
-
-          {task.status === 'Assigned' && (
-            <div className="space-y-2.5">
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Click below when you arrive at the site to notify the manager that work has officially started.
-              </p>
-              <Button 
-                onClick={handleStartTask} 
-                disabled={isActionLoading}
-                className="w-full font-bold bg-primary text-primary-foreground py-5 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                {isActionLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <Play className="h-4 w-4 fill-current" />
-                    Start Work Now
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
-
-          {task.status === 'In Progress' && (
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <Label htmlFor="tech-notes" className="text-[11px] font-bold text-muted-foreground">
-                  Technician Report Notes
-                </Label>
-                <Textarea
-                  id="tech-notes"
-                  value={techNotes}
-                  onChange={(e) => setTechNotes(e.target.value)}
-                  placeholder="Describe what was fixed, materials used, client comments, or any notes..."
-                  rows={4}
-                  className="text-xs leading-relaxed"
-                />
+          {/* ACTION PANEL */}
+          <Card className="shadow-xs border-border/60 bg-card">
+            <CardContent className="p-4 space-y-4">
+              <div className="flex items-center justify-between border-b pb-2">
+                <h3 className="text-xs font-bold uppercase text-foreground flex items-center gap-1">
+                  <FileText className="h-4 w-4 text-primary" />
+                  Field Report & Action
+                </h3>
               </div>
 
-              <Button 
-                onClick={handleSubmitVerification}
-                disabled={isActionLoading}
-                className="w-full font-bold bg-emerald-600 hover:bg-emerald-700 text-white py-5 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                {isActionLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <CheckCircle2 className="h-4 w-4" />
-                    Submit for Manager Review
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
-
-          {task.status === 'Pending Verification' && (
-            <div className="bg-purple-500/10 border border-purple-500/20 text-purple-700 dark:text-purple-400 rounded-lg p-3 text-center space-y-1">
-              <Clock className="h-5 w-5 text-purple-500 mx-auto" />
-              <p className="text-xs font-bold">Review Pending</p>
-              <p className="text-[10px] leading-relaxed opacity-85">
-                Work report and photo evidence submitted. Waiting for manager Sarah to verify and close.
-              </p>
-            </div>
-          )}
-
-          {task.status === 'Completed' && (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-lg p-3 text-center space-y-1">
-              <CheckCircle2 className="h-5 w-5 text-emerald-500 mx-auto" />
-              <p className="text-xs font-bold">Task Completed</p>
-              <p className="text-[10px] leading-relaxed opacity-85">
-                This task has been verified and closed by Sarah Manager.
-              </p>
-              {task.technician_notes && (
-                <div className="mt-2 text-left bg-emerald-500/5 p-2 rounded text-[10px] border border-emerald-500/10">
-                  <span className="block font-bold">Your Notes:</span>
-                  <span className="italic">"{task.technician_notes}"</span>
+              {task.status === 'Assigned' && (
+                <div className="space-y-2.5">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Click below when you arrive at the site to notify the manager that work has officially started.
+                  </p>
+                  <Button 
+                    onClick={handleStartTask} 
+                    disabled={isActionLoading}
+                    className="w-full font-bold bg-primary text-primary-foreground py-5 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {isActionLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Play className="h-4 w-4 fill-current" />
+                        Start Work Now
+                      </>
+                    )}
+                  </Button>
                 </div>
               )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* ACTIVITY TIMELINE HISTORIAL */}
-      <Card className="shadow-xs border-border/60 bg-card">
-        <CardContent className="p-4 space-y-4">
-          <div className="flex items-center justify-between border-b pb-2">
-            <h3 className="text-xs font-bold uppercase text-foreground flex items-center gap-1">
-              <History className="h-4 w-4 text-primary" />
-              Task Timeline History
-            </h3>
-          </div>
-
-          <div className="space-y-4 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-border/60">
-            {task.activity_log && task.activity_log.length > 0 ? (
-              task.activity_log.map((log, index) => (
-                <div key={index} className="flex gap-3 text-xs relative pl-6">
-                  {/* Dot */}
-                  <div className={`absolute left-0.5 top-1 h-3 w-3 rounded-full border-2 ${
-                    log.type === 'status_change' && log.desc.includes('Completed') ? 'bg-emerald-500 border-emerald-200' :
-                    log.type === 'status_change' && log.desc.includes('In Progress') ? 'bg-amber-500 border-amber-200' :
-                    log.type === 'status_change' && log.desc.includes('verification') ? 'bg-purple-500 border-purple-200' :
-                    'bg-blue-500 border-blue-200'
-                  }`} />
-                  
-                  <div className="space-y-0.5">
-                    <span className="block font-bold text-foreground text-[11px]">{log.desc}</span>
-                    <span className="block text-[10px] text-muted-foreground">
-                      By {log.user} • {new Date(log.time).toLocaleString()}
-                    </span>
+              {task.status === 'In Progress' && (
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="tech-notes" className="text-[11px] font-bold text-muted-foreground">
+                      Technician Report Notes
+                    </Label>
+                    <Textarea
+                      id="tech-notes"
+                      value={techNotes}
+                      onChange={(e) => setTechNotes(e.target.value)}
+                      placeholder="Describe what was fixed, materials used, client comments, or any notes..."
+                      rows={4}
+                      className="text-xs leading-relaxed"
+                    />
                   </div>
+
+                  <Button 
+                    onClick={handleSubmitVerification}
+                    disabled={isActionLoading}
+                    className="w-full font-bold bg-emerald-600 hover:bg-emerald-700 text-white py-5 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {isActionLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-4 w-4" />
+                        Submit for Review
+                      </>
+                    )}
+                  </Button>
                 </div>
-              ))
-            ) : (
-              <p className="text-[10px] text-muted-foreground/60 italic text-center py-2">No events logged yet.</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              )}
+
+              {task.status === 'Pending Verification' && (
+                <div className="bg-purple-500/10 border border-purple-500/20 text-purple-700 dark:text-purple-400 rounded-lg p-3 text-center space-y-1">
+                  <Clock className="h-5 w-5 text-purple-500 mx-auto animate-pulse" />
+                  <p className="text-xs font-bold">Review Pending</p>
+                  <p className="text-[10px] leading-relaxed opacity-85">
+                    Waiting for manager verification.
+                  </p>
+                </div>
+              )}
+
+              {task.status === 'Completed' && (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-lg p-3 text-center space-y-1">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500 mx-auto" />
+                  <p className="text-xs font-bold">Task Completed</p>
+                  <p className="text-[10px] leading-relaxed opacity-85">
+                    Verified and closed.
+                  </p>
+                  {task.technician_notes && (
+                    <div className="mt-2 text-left bg-emerald-500/5 p-2 rounded text-[10px] border border-emerald-500/10">
+                      <span className="block font-bold">Your Notes:</span>
+                      <span className="italic">"{task.technician_notes}"</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* PHOTO EVIDENCE SECTION */}
+          <Card className="shadow-xs border-border/60 bg-card">
+            <CardContent className="p-4 space-y-4">
+              <div className="flex items-center justify-between border-b pb-2">
+                <h3 className="text-xs font-bold uppercase text-foreground flex items-center gap-1">
+                  <Camera className="h-4 w-4 text-primary" />
+                  Photo Evidence
+                </h3>
+              </div>
+
+              {errorMsg && (
+                <div className="bg-destructive/15 border border-destructive/20 text-destructive text-[11px] rounded-md p-2.5 font-semibold">
+                  {errorMsg}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {renderPhotoEvidenceGrid('before', 'Before Photos')}
+                <div className="border-t border-border/40" />
+                {renderPhotoEvidenceGrid('after', 'After Photos')}
+                <div className="border-t border-border/40" />
+                {renderPhotoEvidenceGrid('completion', 'Completion / Sign-off')}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

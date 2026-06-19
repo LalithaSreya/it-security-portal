@@ -228,7 +228,7 @@ export default function GalleryManagement() {
           <RefreshCw className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : items.length > 0 ? (
-        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
+        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {items.map((item) => (
             <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow group relative border-border/50 bg-card">
               <div className="h-48 w-full overflow-hidden bg-muted relative">

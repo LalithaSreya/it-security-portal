@@ -20,7 +20,7 @@ const registerSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
-  phone: z.string().min(10, { message: 'Phone number must be at least 10 digits.' }),
+  phone: z.string().regex(/^\d{10,15}$/, { message: 'Phone number must be between 10 and 15 digits (digits only).' }),
   role: z.enum(['Manager', 'Technician']),
 });
 
@@ -32,10 +32,19 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showSimLink, setShowSimLink] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Check if we are in recovery mode
+  const queryParams = new URLSearchParams(location.search);
+  const isRecovery = queryParams.get('type') === 'recovery';
 
   // Get redirect path
   const from = (location.state as any)?.from?.pathname || '/portal/dashboard';
@@ -125,6 +134,75 @@ export default function Login() {
     }
   };
 
+  const handleSendResetLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail) {
+      setErrorMsg('Please enter your email address.');
+      return;
+    }
+    setIsLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    setShowSimLink(false);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: window.location.origin + '/portal/login?type=recovery',
+      });
+      if (error) {
+        setErrorMsg(error.message || 'Failed to send reset link.');
+      } else {
+        setSuccessMsg('A password reset link has been sent to your email.');
+        // If mock mode, show simulator link
+        const isMock = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY;
+        if (isMock) {
+          setShowSimLink(true);
+        }
+      }
+    } catch (err: any) {
+      console.error('Reset error:', err);
+      setErrorMsg(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword) {
+      setErrorMsg('Please enter a new password.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setErrorMsg('Password must be at least 6 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setErrorMsg('Passwords do not match.');
+      return;
+    }
+    setIsLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        setErrorMsg(error.message || 'Failed to update password.');
+      } else {
+        setSuccessMsg('Password updated successfully! You can now log in.');
+        setNewPassword('');
+        setConfirmPassword('');
+        setTimeout(() => {
+          navigate('/portal/login', { replace: true });
+        }, 2000);
+      }
+    } catch (err: any) {
+      console.error('Update password error:', err);
+      setErrorMsg(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 dark:bg-slate-950 sm:px-6 lg:px-8 transition-colors duration-200">
       <div className="w-full max-w-md space-y-8">
@@ -136,7 +214,13 @@ export default function Login() {
             Security Management Portal
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            {isRegistering ? 'Create a new staff account' : 'Sign in to manage portal operations'}
+            {isForgotPassword 
+              ? 'Reset your portal password' 
+              : isRecovery 
+                ? 'Set your new password' 
+                : isRegistering 
+                  ? 'Create a new staff account' 
+                  : 'Sign in to manage portal operations'}
           </p>
         </div>
 
@@ -155,7 +239,131 @@ export default function Login() {
             </div>
           )}
 
-          {!isRegistering ? (
+          {isForgotPassword ? (
+            /* Forgot Password Request Form */
+            <form onSubmit={handleSendResetLink} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="reset-email">Email Address</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    className="pl-10"
+                    placeholder="name@company.com"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full mt-6" disabled={isLoading}>
+                {isLoading ? 'Sending Link...' : 'Send Reset Link'}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+
+              {showSimLink && (
+                <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-xs text-blue-600 dark:text-blue-400">
+                  <span className="font-semibold block mb-1">Mock Mode Active:</span>
+                  You can simulate clicking the email reset link by clicking here:
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsForgotPassword(false);
+                      setShowSimLink(false);
+                      setSuccessMsg(null);
+                      navigate('/portal/login?type=recovery');
+                    }}
+                    className="font-bold underline ml-1 cursor-pointer block mt-1 hover:text-blue-500 text-left"
+                  >
+                    Simulate Open Reset Link
+                  </button>
+                </div>
+              )}
+
+              <p className="text-center text-xs text-muted-foreground mt-4">
+                Remember your password?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErrorMsg(null);
+                    setSuccessMsg(null);
+                    setIsForgotPassword(false);
+                  }}
+                  className="font-bold text-primary hover:underline"
+                >
+                  Back to Sign In
+                </button>
+              </p>
+            </form>
+          ) : isRecovery ? (
+            /* Reset Password Password Form */
+            <form onSubmit={handleResetPassword} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="new-password"
+                    type={showPassword ? 'text' : 'password'}
+                    className="pl-10 pr-10"
+                    placeholder="••••••••"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    disabled={isLoading}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground focus:outline-none"
+                    disabled={isLoading}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirm New Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="confirm-password"
+                    type={showPassword ? 'text' : 'password'}
+                    className="pl-10 pr-10"
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full mt-6" disabled={isLoading}>
+                {isLoading ? 'Updating Password...' : 'Reset Password'}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+
+              <p className="text-center text-xs text-muted-foreground mt-4">
+                Want to cancel?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErrorMsg(null);
+                    setSuccessMsg(null);
+                    navigate('/portal/login', { replace: true });
+                  }}
+                  className="font-bold text-primary hover:underline"
+                >
+                  Back to Sign In
+                </button>
+              </p>
+            </form>
+          ) : !isRegistering ? (
             /* Login Form */
             <form onSubmit={handleLoginSubmit(onLoginSubmit)} className="space-y-5">
               <div className="space-y-2">
@@ -177,7 +385,20 @@ export default function Login() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setErrorMsg(null);
+                      setSuccessMsg(null);
+                      setIsForgotPassword(true);
+                    }}
+                    className="text-xs text-primary hover:underline font-semibold cursor-pointer"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -273,6 +494,10 @@ export default function Login() {
                       placeholder="5551234567"
                       disabled={isLoading}
                       {...registerSignup('phone')}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        setSignupValue('phone', val, { shouldValidate: true });
+                      }}
                     />
                   </div>
                   {signupErrors.phone && (

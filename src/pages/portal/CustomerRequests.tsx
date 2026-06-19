@@ -132,6 +132,11 @@ export default function CustomerRequests() {
       return;
     }
 
+    if (!/^\d{10,15}$/.test(formPhone)) {
+      setErrorMsg('Invalid Customer Phone Number. Phone number must be between 10 and 15 digits.');
+      return;
+    }
+
     setIsSaving(true);
     setErrorMsg('');
     try {
@@ -488,7 +493,7 @@ export default function CustomerRequests() {
               </div>
               <div className="space-y-1">
                 <Label htmlFor="phone" className="text-foreground font-semibold">Customer Phone</Label>
-                <Input id="phone" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} />
+                <Input id="phone" value={formPhone} onChange={(e) => setFormPhone(e.target.value.replace(/\D/g, ''))} placeholder="5551234567" />
               </div>
             </div>
 

@@ -50,6 +50,7 @@ export default function Reports() {
     emergency: 0
   });
   const [techSummary, setTechSummary] = useState<TechPerfSummary[]>([]);
+  const [backlogTasks, setBacklogTasks] = useState<Task[]>([]);
 
   useEffect(() => {
     async function loadData() {
@@ -79,6 +80,10 @@ export default function Reports() {
         const emergency = tasksList.filter((t: Task) => t.priority === 'Emergency' && t.status !== 'Completed').length;
 
         setTaskStats({ total, completed, pending, emergency });
+
+        // Filter active backlog tasks
+        const backlog = tasksList.filter((t: Task) => t.status !== 'Completed');
+        setBacklogTasks(backlog);
 
         // Calculate tech performance summaries
         const techs = employeesList.filter((e: Employee) => e.role === 'Technician' && e.status === 'Active');
@@ -221,64 +226,9 @@ export default function Reports() {
             </Card>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Technician Performance summary */}
-            <Card className="border-border/50">
-              <CardHeader>
-                <CardTitle className="text-base font-bold flex items-center gap-1.5">
-                  <TrendingUp className="h-4.5 w-4.5 text-primary" />
-                  Technician Performance Rates
-                </CardTitle>
-                <CardDescription>Average task completion trends by active staff member</CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-border bg-muted/40 text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
-                        <th className="px-5 py-3">Technician</th>
-                        <th className="px-5 py-3 text-center">Assigned</th>
-                        <th className="px-5 py-3 text-center">Completed</th>
-                        <th className="px-5 py-3 text-center">Pending</th>
-                        <th className="px-5 py-3 text-right">Completion Rate</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border text-xs">
-                      {techSummary.length > 0 ? (
-                        techSummary.map((tech, i) => (
-                          <tr key={i} className="hover:bg-muted/10 transition-colors">
-                            <td className="px-5 py-3.5 font-bold text-foreground">{tech.name}</td>
-                            <td className="px-5 py-3.5 text-center text-muted-foreground font-semibold">{tech.assigned}</td>
-                            <td className="px-5 py-3.5 text-center text-emerald-500 font-bold">{tech.completed}</td>
-                            <td className="px-5 py-3.5 text-center text-amber-500 font-bold">{tech.pending}</td>
-                            <td className="px-5 py-3.5 text-right">
-                              <span className={`inline-flex items-center rounded px-2 py-0.5 font-bold ${
-                                tech.rate >= 80 
-                                  ? 'bg-emerald-500/10 text-emerald-500' 
-                                  : tech.rate >= 50 
-                                    ? 'bg-amber-500/10 text-amber-500' 
-                                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                              }`}>
-                                {tech.rate}%
-                              </span>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={5} className="px-5 py-6 text-center text-muted-foreground">
-                            No technician assignments found.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Simple trends details */}
-            <Card className="border-border/50">
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+            {/* Row 1 / Card 1: Task Lifecycle Overview */}
+            <Card className="border-border/50 flex flex-col h-full">
               <CardHeader>
                 <CardTitle className="text-base font-bold flex items-center gap-1.5">
                   <BarChart3 className="h-4.5 w-4.5 text-primary" />
@@ -286,7 +236,7 @@ export default function Reports() {
                 </CardTitle>
                 <CardDescription>Visual completion rate breakdown of the operations backlog</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-5">
+              <CardContent className="flex-1 flex flex-col justify-between space-y-5">
                 {/* Completion rate bar */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs font-semibold">
@@ -303,7 +253,7 @@ export default function Reports() {
                   </div>
                 </div>
 
-                <div className="rounded-lg border p-4 bg-muted/10 space-y-2.5 text-xs">
+                <div className="rounded-lg border p-4 bg-muted/10 space-y-2.5 text-xs flex-1 flex flex-col justify-center">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" />
                     <p className="text-muted-foreground">
@@ -322,6 +272,130 @@ export default function Reports() {
                       <strong>{taskStats.emergency} emergency</strong> tasks require immediate technical dispatch.
                     </p>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Row 1 / Card 2: Technician Performance summary */}
+            <Card className="border-border/50 flex flex-col h-full">
+              <CardHeader>
+                <CardTitle className="text-base font-bold flex items-center gap-1.5">
+                  <TrendingUp className="h-4.5 w-4.5 text-primary" />
+                  Technician Performance Rates
+                </CardTitle>
+                <CardDescription>Average task completion trends by active staff member</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0 flex-1 overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/40 text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
+                      <th className="px-5 py-3">Technician</th>
+                      <th className="px-5 py-3 text-center">Assigned</th>
+                      <th className="px-5 py-3 text-center">Completed</th>
+                      <th className="px-5 py-3 text-center">Pending</th>
+                      <th className="px-5 py-3 text-right">Completion Rate</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border text-xs">
+                    {techSummary.length > 0 ? (
+                      techSummary.map((tech, i) => (
+                        <tr key={i} className="hover:bg-muted/10 transition-colors">
+                          <td className="px-5 py-3.5 font-bold text-foreground">{tech.name}</td>
+                          <td className="px-5 py-3.5 text-center text-muted-foreground font-semibold">{tech.assigned}</td>
+                          <td className="px-5 py-3.5 text-center text-emerald-500 font-bold">{tech.completed}</td>
+                          <td className="px-5 py-3.5 text-center text-amber-500 font-bold">{tech.pending}</td>
+                          <td className="px-5 py-3.5 text-right">
+                            <span className={`inline-flex items-center rounded px-2 py-0.5 font-bold ${
+                              tech.rate >= 80 
+                                ? 'bg-emerald-500/10 text-emerald-500' 
+                                : tech.rate >= 50 
+                                  ? 'bg-amber-500/10 text-amber-500' 
+                                  : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                            }`}>
+                              {tech.rate}%
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="px-5 py-6 text-center text-muted-foreground">
+                          No technician assignments found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+
+            {/* Row 2 / Card 1: Monthly Completed Trends (Mock Chart) */}
+            <Card className="border-border/50 flex flex-col h-full">
+              <CardHeader>
+                <CardTitle className="text-base font-bold flex items-center gap-1.5">
+                  <BarChart3 className="h-4.5 w-4.5 text-primary" />
+                  Monthly Completed Trends
+                </CardTitle>
+                <CardDescription>Operational trends of resolved jobs over the last 6 months</CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col justify-end pt-4 pb-2">
+                <div className="flex justify-between items-end h-[200px] px-2 border-b border-border/80 pb-1">
+                  {[
+                    { month: 'Jan', count: 12, height: '40%' },
+                    { month: 'Feb', count: 18, height: '60%' },
+                    { month: 'Mar', count: 24, height: '80%' },
+                    { month: 'Apr', count: 15, height: '50%' },
+                    { month: 'May', count: 30, height: '100%' },
+                    { month: 'Jun', count: 22, height: '73%' },
+                  ].map((bar, i) => (
+                    <div key={i} className="flex flex-col items-center gap-2 w-1/7 group">
+                      <span className="text-[10px] font-bold text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                        {bar.count}
+                      </span>
+                      <div 
+                        style={{ height: bar.height }} 
+                        className="w-8 bg-gradient-to-t from-primary/80 to-primary rounded-t-sm transition-all duration-300 hover:from-primary hover:to-primary/90 cursor-pointer shadow-xs" 
+                        title={`${bar.count} tasks completed`}
+                      />
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{bar.month}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Row 2 / Card 2: Active Backlog Queue */}
+            <Card className="border-border/50 flex flex-col h-full">
+              <CardHeader>
+                <CardTitle className="text-base font-bold flex items-center gap-1.5">
+                  <Clock className="h-4.5 w-4.5 text-primary" />
+                  Active Backlog Queue
+                </CardTitle>
+                <CardDescription>Unresolved tasks currently pending technician action</CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1 overflow-y-auto max-h-[250px] pr-2">
+                <div className="space-y-3">
+                  {backlogTasks.length > 0 ? (
+                    backlogTasks.map((t) => (
+                      <div key={t.id} className="flex justify-between items-start p-2.5 rounded-lg border border-border bg-muted/20 text-xs">
+                        <div className="space-y-1">
+                          <p className="font-bold text-foreground truncate max-w-[220px]">{t.task_title}</p>
+                          <p className="text-[10px] text-muted-foreground">{t.customer_name} • {t.location}</p>
+                        </div>
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                          t.status === 'Pending Verification' 
+                            ? 'bg-purple-500/10 text-purple-600 border border-purple-500/20'
+                            : t.status === 'In Progress'
+                              ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+                              : 'bg-blue-500/10 text-blue-600 border border-blue-500/20'
+                        }`}>
+                          {t.status}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-muted-foreground text-center py-6">No pending tasks in queue.</p>
+                  )}
                 </div>
               </CardContent>
             </Card>

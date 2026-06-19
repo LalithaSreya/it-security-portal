@@ -121,7 +121,7 @@ export default function MyTasks() {
   }
 
   return (
-    <div className="space-y-6 max-w-md mx-auto px-4 pb-10">
+    <div className="space-y-6 w-full px-4 pb-10">
       {/* Title */}
       <div className="flex flex-col gap-1.5 py-1">
         <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">

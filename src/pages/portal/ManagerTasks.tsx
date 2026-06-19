@@ -135,6 +135,11 @@ export default function ManagerTasks() {
       return;
     }
 
+    if (!/^\d{10,15}$/.test(formPhone)) {
+      setErrorMsg('Invalid Phone Number. Phone number must be between 10 and 15 digits (digits only).');
+      return;
+    }
+
     setIsSaving(true);
     setErrorMsg('');
 
@@ -194,6 +199,11 @@ export default function ManagerTasks() {
     if (!selectedTask) return;
     if (!formTitle.trim() || !formCustomer.trim() || !formPhone.trim() || !formLocation.trim() || !formDesc.trim() || !formTechId || !formDueDate) {
       setErrorMsg('Please fill in all required fields.');
+      return;
+    }
+
+    if (!/^\d{10,15}$/.test(formPhone)) {
+      setErrorMsg('Invalid Phone Number. Phone number must be between 10 and 15 digits (digits only).');
       return;
     }
 
@@ -634,7 +644,7 @@ export default function ManagerTasks() {
               </div>
               <div className="space-y-1">
                 <Label htmlFor="phone" className="text-foreground font-semibold">Customer Phone</Label>
-                <Input id="phone" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="+1 (555) 000-0000" />
+                <Input id="phone" value={formPhone} onChange={(e) => setFormPhone(e.target.value.replace(/\D/g, ''))} placeholder="5551234567" />
               </div>
             </div>
 
@@ -739,7 +749,7 @@ export default function ManagerTasks() {
               </div>
               <div className="space-y-1">
                 <Label htmlFor="edit-phone" className="text-foreground font-semibold">Customer Phone</Label>
-                <Input id="edit-phone" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} />
+                <Input id="edit-phone" value={formPhone} onChange={(e) => setFormPhone(e.target.value.replace(/\D/g, ''))} placeholder="5551234567" />
               </div>
             </div>
 

@@ -39,19 +39,19 @@ export default function Footer() {
             <h4 className="text-foreground font-semibold mb-4 text-sm uppercase tracking-wider">Company</h4>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <Link to="/" className="hover:text-primary transition-colors">Home</Link>
+                <Link to="/about-us" className="hover:text-primary transition-colors">Home</Link>
               </li>
               <li>
-                <Link to="/about" className="hover:text-primary transition-colors">About Us</Link>
+                <Link to="/about-us/about" className="hover:text-primary transition-colors">About Us</Link>
               </li>
               <li>
-                <Link to="/services" className="hover:text-primary transition-colors">Services Directory</Link>
+                <Link to="/about-us/services" className="hover:text-primary transition-colors">Services Directory</Link>
               </li>
               <li>
-                <Link to="/gallery" className="hover:text-primary transition-colors">Project Gallery</Link>
+                <Link to="/about-us/gallery" className="hover:text-primary transition-colors">Project Gallery</Link>
               </li>
               <li>
-                <Link to="/contact" className="hover:text-primary transition-colors">Request a Quote</Link>
+                <Link to="/about-us/contact" className="hover:text-primary transition-colors">Request a Quote</Link>
               </li>
             </ul>
           </div>
@@ -61,19 +61,19 @@ export default function Footer() {
             <h4 className="text-foreground font-semibold mb-4 text-sm uppercase tracking-wider">Services</h4>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <Link to="/services/cctv-installation" className="hover:text-primary transition-colors">CCTV Installation</Link>
+                <Link to="/about-us/services/cctv-installation" className="hover:text-primary transition-colors">CCTV Installation</Link>
               </li>
               <li>
-                <Link to="/services/access-control" className="hover:text-primary transition-colors">Access Control</Link>
+                <Link to="/about-us/services/access-control" className="hover:text-primary transition-colors">Access Control</Link>
               </li>
               <li>
-                <Link to="/services/fire-alarm" className="hover:text-primary transition-colors">Fire Alarm Systems</Link>
+                <Link to="/about-us/services/fire-alarm" className="hover:text-primary transition-colors">Fire Alarm Systems</Link>
               </li>
               <li>
-                <Link to="/services/biometric-system" className="hover:text-primary transition-colors">Biometric Systems</Link>
+                <Link to="/about-us/services/biometric-system" className="hover:text-primary transition-colors">Biometric Systems</Link>
               </li>
               <li>
-                <Link to="/services/amc-service" className="hover:text-primary transition-colors">Annual Maintenance (AMC)</Link>
+                <Link to="/about-us/services/amc-service" className="hover:text-primary transition-colors">Annual Maintenance (AMC)</Link>
               </li>
             </ul>
           </div>
@@ -82,18 +82,29 @@ export default function Footer() {
           <div className="space-y-4">
             <h4 className="text-foreground font-semibold text-sm uppercase tracking-wider">Get in Touch</h4>
             <div className="space-y-3 text-sm">
-              <div className="flex items-start gap-2.5">
+              <a 
+                href="https://maps.google.com/?q=100+Security+Plaza,+Suite+400,+Tech+Valley,+CA+94012" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="flex items-start gap-2.5 hover:text-primary transition-colors"
+              >
                 <MapPin className="w-4 h-4 text-primary shrink-0 mt-1" />
                 <span>100 Security Plaza, Suite 400, Tech Valley, CA 94012</span>
-              </div>
-              <div className="flex items-center gap-2.5">
+              </a>
+              <a 
+                href="tel:+15551234567" 
+                className="flex items-center gap-2.5 hover:text-primary transition-colors"
+              >
                 <Phone className="w-4 h-4 text-primary shrink-0" />
                 <span>+1 (555) 123-4567</span>
-              </div>
-              <div className="flex items-center gap-2.5">
+              </a>
+              <a 
+                href="mailto:info@secureit-solutions.com" 
+                className="flex items-center gap-2.5 hover:text-primary transition-colors"
+              >
                 <Mail className="w-4 h-4 text-primary shrink-0" />
                 <span>info@secureit-solutions.com</span>
-              </div>
+              </a>
             </div>
           </div>
         </div>

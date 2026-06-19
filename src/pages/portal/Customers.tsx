@@ -99,6 +99,11 @@ export default function Customers() {
   };
 
   const handleCreateCustomer = async () => {
+    if (!/^\d{10,15}$/.test(addPhone)) {
+      alert("Invalid Phone Number. Phone number must be between 10 and 15 digits (digits only).");
+      return;
+    }
+
     setIsAdding(true);
     try {
       const { error } = await supabase.from('customers').insert({
@@ -133,6 +138,12 @@ export default function Customers() {
 
   const handleSaveChanges = async () => {
     if (!customerToEdit) return;
+
+    if (!/^\d{10,15}$/.test(editPhone)) {
+      alert("Invalid Phone Number. Phone number must be between 10 and 15 digits (digits only).");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const { error } = await supabase
@@ -426,8 +437,8 @@ export default function Customers() {
                 <Input
                   id="add-cust-phone"
                   value={addPhone}
-                  onChange={(e) => setAddPhone(e.target.value)}
-                  placeholder="+1 (555) 000-0000"
+                  onChange={(e) => setAddPhone(e.target.value.replace(/\D/g, ''))}
+                  placeholder="5551234567"
                 />
               </div>
             </div>
@@ -509,8 +520,8 @@ export default function Customers() {
                   <Input
                     id="edit-phone"
                     value={editPhone}
-                    onChange={(e) => setEditPhone(e.target.value)}
-                    placeholder="+1 (555) 000-0000"
+                    onChange={(e) => setEditPhone(e.target.value.replace(/\D/g, ''))}
+                    placeholder="5551234567"
                   />
                 </div>
               </div>

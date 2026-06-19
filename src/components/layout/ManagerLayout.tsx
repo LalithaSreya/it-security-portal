@@ -82,7 +82,7 @@ export default function ManagerLayout() {
 
         {/* Page Container */}
         <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-slate-50 dark:bg-slate-950/40">
-          <div className="mx-auto max-w-7xl">
+          <div className="w-full">
             <Outlet />
           </div>
         </main>

@@ -75,7 +75,7 @@ export default function TechnicianDashboard() {
   }
 
   return (
-    <div className="space-y-6 max-w-md mx-auto">
+    <div className="space-y-6 w-full">
       {/* Welcome Header */}
       <div className="flex flex-col gap-1 py-2">
         <div className="flex items-center gap-2">
@@ -91,7 +91,7 @@ export default function TechnicianDashboard() {
       </div>
 
       {/* Grid of Large Cards */}
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Assigned Tasks */}
         <Card 
           className="relative overflow-hidden cursor-pointer hover:border-primary/50 transition-all shadow-md group py-1"

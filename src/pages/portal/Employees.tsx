@@ -62,6 +62,7 @@ export default function Employees() {
   const [empToDelete, setEmpToDelete] = useState<Employee | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmDeletePassword, setConfirmDeletePassword] = useState('');
 
   const loadEmployees = async () => {
     setLoading(true);
@@ -108,6 +109,11 @@ export default function Employees() {
   const handleSaveEmployee = async () => {
     if (!isManager) {
       alert('Unauthorized! Only Managers can modify employee records.');
+      return;
+    }
+
+    if (!/^\d{10,15}$/.test(empPhone)) {
+      alert('Invalid Phone Number. Phone number must be between 10 and 15 digits (digits only).');
       return;
     }
     
@@ -216,6 +222,26 @@ export default function Employees() {
 
     setIsDeleting(true);
     try {
+      if (empToDelete.role === 'Technician') {
+        if (!confirmDeletePassword) {
+          alert('Verification Required: Please enter your manager password to confirm deletion.');
+          setIsDeleting(false);
+          return;
+        }
+
+        // Verify manager password via signInWithPassword re-authentication
+        const { error: authError } = await supabase.auth.signInWithPassword({
+          email: currentEmployee?.email || '',
+          password: confirmDeletePassword
+        });
+
+        if (authError) {
+          alert('Verification Failed: Incorrect manager password. Deletion cancelled.');
+          setIsDeleting(false);
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from('employees')
         .delete()
@@ -225,11 +251,12 @@ export default function Employees() {
 
       setIsDeleteOpen(false);
       setEmpToDelete(null);
+      setConfirmDeletePassword('');
       loadEmployees();
       alert('Employee deleted successfully!');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting employee:', err);
-      alert('Failed to delete employee record.');
+      alert(err.message || 'Failed to delete employee record.');
     } finally {
       setIsDeleting(false);
     }
@@ -433,8 +460,8 @@ export default function Employees() {
                 <Input
                   id="emp-phone"
                   value={empPhone}
-                  onChange={(e) => setEmpPhone(e.target.value)}
-                  placeholder="+1 (555) 000-0000"
+                  onChange={(e) => setEmpPhone(e.target.value.replace(/\D/g, ''))}
+                  placeholder="5551234567"
                 />
               </div>
             </div>
@@ -503,7 +530,15 @@ export default function Employees() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+      <Dialog open={isDeleteOpen} onOpenChange={(open) => {
+        if (!open) {
+          setIsDeleteOpen(false);
+          setEmpToDelete(null);
+          setConfirmDeletePassword('');
+        } else {
+          setIsDeleteOpen(true);
+        }
+      }}>
         <DialogContent className="sm:max-w-[420px] border-border bg-card">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold flex items-center gap-2">
@@ -516,19 +551,41 @@ export default function Employees() {
           </DialogHeader>
 
           {empToDelete && (
-            <div className="rounded-lg bg-destructive/10 p-4 border border-destructive/20 text-sm text-destructive dark:bg-destructive/20">
-              <span className="font-bold">Target Account: </span>
-              {empToDelete.employee_name} ({empToDelete.email})
+            <div className="rounded-lg bg-destructive/10 p-4 border border-destructive/20 text-sm text-destructive dark:bg-destructive/20 space-y-3">
+              <div>
+                <span className="font-bold">Target Account: </span>
+                {empToDelete.employee_name} ({empToDelete.email})
+              </div>
+
+              {empToDelete.role === 'Technician' && (
+                <div className="space-y-1.5 pt-2 border-t border-destructive/20">
+                  <Label htmlFor="delete-pwd-confirm" className="text-xs font-semibold text-destructive">
+                    Manager Password Verification
+                  </Label>
+                  <Input
+                    id="delete-pwd-confirm"
+                    type="password"
+                    placeholder="Enter your manager password"
+                    value={confirmDeletePassword}
+                    onChange={(e) => setConfirmDeletePassword(e.target.value)}
+                    className="bg-background text-foreground border-destructive/30 focus-visible:ring-destructive"
+                  />
+                </div>
+              )}
             </div>
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={isDeleting}>
+            <Button variant="outline" onClick={() => {
+              setIsDeleteOpen(false);
+              setEmpToDelete(null);
+              setConfirmDeletePassword('');
+            }} disabled={isDeleting}>
               Cancel
             </Button>
             <Button 
               onClick={handleDeleteEmployee} 
-              disabled={isDeleting}
+              disabled={isDeleting || (empToDelete?.role === 'Technician' && !confirmDeletePassword)}
               className="bg-destructive hover:bg-destructive/90 text-white"
             >
               {isDeleting ? 'Deleting...' : 'Confirm Delete'}

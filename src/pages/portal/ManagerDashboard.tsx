@@ -7,7 +7,8 @@ import {
   ArrowRight,
   TrendingUp,
   UserCheck,
-  FileText
+  FileText,
+  Users
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase, type Task, type Employee, type Lead } from '@/lib/supabase';
@@ -32,6 +33,8 @@ export default function ManagerDashboard() {
     completedTasks: 0,
     activeTechnicians: 0,
     emergencyTasks: 0,
+    totalTasks: 0,
+    teamPerformance: 0,
   });
   const [recentTasks, setRecentTasks] = useState<Task[]>([]);
   const [techPerformances, setTechPerformances] = useState<TechPerformance[]>([]);
@@ -65,6 +68,9 @@ export default function ManagerDashboard() {
           t => t.priority === 'Emergency' && t.status !== 'Completed'
         ).length;
 
+        const totalTasks = tasks.length;
+        const teamPerformance = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
         setStats({
           totalRequests,
           assignedTasks,
@@ -73,6 +79,8 @@ export default function ManagerDashboard() {
           completedTasks,
           activeTechnicians,
           emergencyTasks,
+          totalTasks,
+          teamPerformance,
         });
 
         // 2. Calculate Technician Performance Metrics
@@ -175,27 +183,27 @@ export default function ManagerDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-7">
-        {/* Total Requests */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Row 1 / Card 1: Total Tasks */}
         <Card className="relative overflow-hidden transition-all hover:shadow-md border-border/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Total Requests
+              Total Tasks
             </CardTitle>
             <FileText className="h-4.5 w-4.5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold tracking-tight">{stats.totalRequests}</div>
-            <p className="text-[10px] text-muted-foreground mt-1">Customer dispatches</p>
+            <div className="text-2xl font-bold tracking-tight">{stats.totalTasks}</div>
+            <p className="text-[10px] text-muted-foreground mt-1">Overall dispatches</p>
           </CardContent>
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-400"></div>
         </Card>
 
-        {/* Assigned Tasks */}
+        {/* Row 1 / Card 2: Pending Tasks */}
         <Card className="relative overflow-hidden transition-all hover:shadow-md border-border/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Open Tasks
+              Pending
             </CardTitle>
             <UserCheck className="h-4.5 w-4.5 text-blue-500" />
           </CardHeader>
@@ -206,7 +214,7 @@ export default function ManagerDashboard() {
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500"></div>
         </Card>
 
-        {/* In Progress Tasks */}
+        {/* Row 1 / Card 3: In Progress Tasks */}
         <Card className="relative overflow-hidden transition-all hover:shadow-md border-border/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -221,22 +229,7 @@ export default function ManagerDashboard() {
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-amber-500"></div>
         </Card>
 
-        {/* Pending Verification */}
-        <Card className="relative overflow-hidden transition-all hover:shadow-md border-border/50">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Pending Review
-            </CardTitle>
-            <FileClock className="h-4.5 w-4.5 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold tracking-tight text-purple-500">{stats.pendingVerification}</div>
-            <p className="text-[10px] text-muted-foreground mt-1">Awaiting verification</p>
-          </CardContent>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-purple-500"></div>
-        </Card>
-
-        {/* Completed Tasks */}
+        {/* Row 1 / Card 4: Completed Tasks */}
         <Card className="relative overflow-hidden transition-all hover:shadow-md border-border/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -251,22 +244,7 @@ export default function ManagerDashboard() {
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500"></div>
         </Card>
 
-        {/* Active Technicians */}
-        <Card className="relative overflow-hidden transition-all hover:shadow-md border-border/50">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Active Techs
-            </CardTitle>
-            <TrendingUp className="h-4.5 w-4.5 text-indigo-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold tracking-tight text-indigo-500">{stats.activeTechnicians}</div>
-            <p className="text-[10px] text-muted-foreground mt-1">Active field workforce</p>
-          </CardContent>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-500"></div>
-        </Card>
-
-        {/* Emergency Tasks */}
+        {/* Row 2 / Card 1: Emergency Tasks */}
         <Card className="relative overflow-hidden transition-all hover:shadow-md border-rose-500/30">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-rose-500 uppercase tracking-wider">
@@ -279,6 +257,51 @@ export default function ManagerDashboard() {
             <p className="text-[10px] text-rose-500/70 mt-1">Critical alerts</p>
           </CardContent>
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-rose-500"></div>
+        </Card>
+
+        {/* Row 2 / Card 2: Active Technicians */}
+        <Card className="relative overflow-hidden transition-all hover:shadow-md border-border/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Active Techs
+            </CardTitle>
+            <Users className="h-4.5 w-4.5 text-indigo-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold tracking-tight text-indigo-500">{stats.activeTechnicians}</div>
+            <p className="text-[10px] text-muted-foreground mt-1">Active field workforce</p>
+          </CardContent>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-500"></div>
+        </Card>
+
+        {/* Row 2 / Card 3: Customer Requests */}
+        <Card className="relative overflow-hidden transition-all hover:shadow-md border-border/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Customer Requests
+            </CardTitle>
+            <FileClock className="h-4.5 w-4.5 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold tracking-tight text-blue-500">{stats.totalRequests}</div>
+            <p className="text-[10px] text-muted-foreground mt-1">Customer dispatches</p>
+          </CardContent>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500"></div>
+        </Card>
+
+        {/* Row 2 / Card 4: Team Performance */}
+        <Card className="relative overflow-hidden transition-all hover:shadow-md border-border/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Team Performance
+            </CardTitle>
+            <TrendingUp className="h-4.5 w-4.5 text-teal-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold tracking-tight text-teal-500">{stats.teamPerformance}%</div>
+            <p className="text-[10px] text-muted-foreground mt-1">Task completion rate</p>
+          </CardContent>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-teal-500"></div>
         </Card>
       </div>
 

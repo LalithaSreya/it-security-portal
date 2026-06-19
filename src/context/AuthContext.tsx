@@ -17,7 +17,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   // Fetch employee record matching the auth user ID
-  const fetchEmployeeData = async (userId: string) => {
+  const fetchEmployeeData = async (userId: string): Promise<Employee | null> => {
     try {
       const { data, error } = await supabase
         .from('employees')
@@ -27,13 +27,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        setEmployee(data[0] as Employee);
+        const emp = data[0] as Employee;
+        setEmployee(emp);
+        return emp;
       } else {
         setEmployee(null);
+        return null;
       }
     } catch (err) {
       console.error('Error fetching employee details:', err);
       setEmployee(null);
+      return null;
     }
   };
 
@@ -45,9 +49,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data } = await supabase.auth.getSession();
       const session = data?.session;
 
+      const handleUserAuth = async (currUser: any) => {
+        setUser(currUser);
+        if (currUser) {
+          const emp = await fetchEmployeeData(currUser.id);
+          if (emp && emp.role === 'Technician' && emp.status !== 'Active') {
+            await supabase
+              .from('employees')
+              .update({ status: 'Active' })
+              .eq('id', currUser.id);
+            setEmployee({ ...emp, status: 'Active' });
+          }
+        } else {
+          setEmployee(null);
+        }
+      };
+
       if (session?.user) {
-        setUser(session.user);
-        await fetchEmployeeData(session.user.id);
+        await handleUserAuth(session.user);
       } else {
         setUser(null);
         setEmployee(null);
@@ -58,8 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const authListener = supabase.auth.onAuthStateChange(async (_event: string, currentSession: any) => {
         setLoading(true);
         if (currentSession?.user) {
-          setUser(currentSession.user);
-          await fetchEmployeeData(currentSession.user.id);
+          await handleUserAuth(currentSession.user);
         } else {
           setUser(null);
           setEmployee(null);
@@ -91,13 +109,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (data?.user) {
       setUser(data.user);
-      await fetchEmployeeData(data.user.id);
+      const emp = await fetchEmployeeData(data.user.id);
+      if (emp && emp.role === 'Technician') {
+        await supabase
+          .from('employees')
+          .update({ status: 'Active' })
+          .eq('id', data.user.id);
+        setEmployee({ ...emp, status: 'Active' });
+      }
     }
 
     return { error: null };
   };
 
   const logout = async () => {
+    if (user && employee?.role === 'Technician') {
+      try {
+        await supabase
+          .from('employees')
+          .update({ status: 'Inactive' })
+          .eq('id', user.id);
+      } catch (err) {
+        console.error('Failed to set status to Inactive on logout:', err);
+      }
+    }
     const { error } = await supabase.auth.signOut();
     if (!error) {
       setUser(null);

@@ -177,6 +177,11 @@ export default function Leads() {
   };
 
   const handleSaveLead = async () => {
+    if (!/^\d{10,15}$/.test(formPhone)) {
+      alert("Invalid Phone Number. Phone number must be between 10 and 15 digits (digits only).");
+      return;
+    }
+
     setIsSavingLead(true);
     try {
       if (leadToEdit) {
@@ -779,8 +784,8 @@ export default function Leads() {
                 <Input
                   id="lead-phone"
                   value={formPhone}
-                  onChange={(e) => setFormPhone(e.target.value)}
-                  placeholder="+1 (555) 000-0000"
+                  onChange={(e) => setFormPhone(e.target.value.replace(/\D/g, ''))}
+                  placeholder="5551234567"
                 />
               </div>
             </div>
