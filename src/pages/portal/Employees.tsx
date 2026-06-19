@@ -54,7 +54,7 @@ export default function Employees() {
   const [empEmail, setEmpEmail] = useState('');
   const [empPhone, setEmpPhone] = useState('');
   const [empRole, setEmpRole] = useState<'Manager' | 'Technician'>('Technician');
-  const [empStatus, setEmpStatus] = useState<'Active' | 'Inactive'>('Active');
+  const [empStatus, setEmpStatus] = useState<'Active' | 'Inactive'>('Inactive');
   const [empPassword, setEmpPassword] = useState('password123'); // Default password for new auth account
   const [isSaving, setIsSaving] = useState(false);
 
@@ -91,7 +91,7 @@ export default function Employees() {
     setEmpEmail('');
     setEmpPhone('');
     setEmpRole('Technician');
-    setEmpStatus('Active');
+    setEmpStatus('Inactive');
     setEmpPassword('password123');
     setIsOpen(true);
   };
